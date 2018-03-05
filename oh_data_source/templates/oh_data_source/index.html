@@ -22,19 +22,19 @@
           This authorizes us to add data to your account.</li>
         <li><b>Return to this app</b><br>
           Come back to the app so we can get your personalized fitbit data.</li>
-        <li><b>Decide on what kind of Fitbit data you want</b><br>
-          If you want access to minute or second level data, you will need Intraday access. If you don't need this granular of access, you can use regular access.</li>
-        <li><b>Authorize with Fitbit <i>OR</i> Create a "Personal" Fitbit app and enter your client ID/secret</b><br>
-          Blah</li>
-        <li><b>Decide on what kind of Fitbit data you want</b><br>
-          If you want access to minute or second level data, you will need Intraday access. If you don't need this granular of access, you can use regular access.</li>
-        <li><b>Fill out the form specifying dates &amp; type of data you would like</b><br>
-          Fill out the form that appears on the app, providing dates and types of information that you would like fetched from Fitbit.
-        <li><b>Submit the form &amp; wait for data upload</b><br>
-          This app will submit a job to fetch your specified Fitbit data and upload it to your Open Humans account.
+        <li><b>Click the "connect Fitbit" button below</b><br>
+          This will redirect you to Fitbit to authorize so we can fetch Fitbit data to add to your account.</li>
+        <li><b>Authorize with Fitbit<br></b></li>
+        <li><b>Return and the app will add data.</b><br>
+          Demo data should be added to your Open Humans account.
           You'll be able to access &amp; manage data here:
           <a href="{{ oh_proj_page }}">{{ oh_proj_page }}</a>
         </li>
+
+        <!-- Eventually show optional instructions, only after completed integration, instructing on how to get Intraday data set up  -->
+        <!-- Create a "Personal" Fitbit app and enter your client ID/secret
+        If you want access to minute or second level data, you will need Intraday access. If you don't need this granular of access, you can use regular access.</li> -->
+
       </ol>
       {% if client_id %}
       <a

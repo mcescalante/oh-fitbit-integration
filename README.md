@@ -49,11 +49,12 @@ The Fitbit API has rate limits which you can [read more about here](https://dev.
 This is a potential "user story" for the new integration:
 
 1. User opens app, links to Open Humans via OAuth2
-2. User is presented with a workflow which helps them create a Personal OAuth2 app on Fitbit's dev site and enter their details (client id/secret) in our integration app. They would set the callback URL to our app in the Fitbit OAuth2 app settings.
-3. After completing steps 1 & 2 successfully, User is presented with a form-like interface that allows them to select/customize what information they want to get from Fitbit
-    - List of scopes like so:
-    ![](https://cl.ly/443C1C010o2K/Screen%20Shot%202018-02-24%20at%206.22.35%20PM.png)
-    - Start/end dates
-    - Time intervals for Intraday or time-series data (heart/activity/sleep)
-4. User completes interface and submits, which triggers a (customized) job that makes the proper API requests and builds a single output array of data.
+2. User does a standard link to fitbit, like how the process is in the current integration.
+3. After the integration is complete, signal to user that all "standard" Fitbit data is downloaded and queued for download on Open Humans to the linked account. 
 
+_Optional workflow after integration is complete for intraday data_
+
+4. Show information to user about intraday data (minute/second level) and that it requires some manual work (to go to the Fitbit site and make a Personal OAuth2 app).
+5. If the user chooses to do this, allow them to enter the client ID and secret from Fitbit. Then queue an additional different file(s) for intraday fitbit data upload to Open Humans.
+
+Because the intraday datasets can get large as they are minute/second intervals, we should upload a separate gzipped file to Open Humans.

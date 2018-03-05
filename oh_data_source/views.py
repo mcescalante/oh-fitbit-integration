@@ -40,7 +40,7 @@ def oh_code_to_member(code):
     if settings.OH_CLIENT_SECRET and settings.OH_CLIENT_ID and code:
         data = {
             'grant_type': 'authorization_code',
-            'redirect_uri': '{}/complete'.format(APP_BASE_URL),
+            'redirect_uri': '{}/complete/oh'.format(APP_BASE_URL),
             'code': code,
         }
         req = requests.post(
@@ -72,6 +72,7 @@ def oh_code_to_member(code):
 
             return oh_member
         elif 'error' in req.json():
+            print(req.json())
             logger.debug('Error in token exchange: {}'.format(req.json()))
         else:
             logger.warning('Neither token nor error info in OH response!')
@@ -90,7 +91,7 @@ def index(request):
     return render(request, 'oh_data_source/index.html', context=context)
 
 
-def complete(request):
+def complete_oh(request):
     """
     Receive user from Open Humans. Store data, start data upload task.
     """
@@ -99,6 +100,7 @@ def complete(request):
     # Exchange code for token.
     # This creates an OpenHumansMember and associated User account.
     code = request.GET.get('code', '')
+    print(code)
     oh_member = oh_code_to_member(code=code)
 
     if oh_member:
@@ -109,11 +111,19 @@ def complete(request):
         login(request, user, backend='django.contrib.auth.backends.ModelBackend')
 
         # Initiate a data transfer task, then render 'complete.html'.
-        xfer_to_open_humans.delay(oh_id=oh_member.oh_id)
+        # xfer_to_open_humans.delay(oh_id=oh_member.oh_id)
         context = {'oh_id': oh_member.oh_id,
                    'oh_proj_page': settings.OH_ACTIVITY_PAGE}
-        return render(request, 'oh_data_source/complete.html',
+        return render(request, 'oh_data_source/fitbit.html',
                       context=context)
 
     logger.debug('Invalid code exchange. User returned to starting page.')
     return redirect('/')
+
+def complete_fitbit(request):
+
+
+    context = {'oh_id': oh_member.oh_id,
+               'oh_proj_page': settings.OH_ACTIVITY_PAGE}
+    return render(request, 'oh_data_source/complete.html',
+                  context=context)
