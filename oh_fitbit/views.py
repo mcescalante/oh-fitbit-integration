@@ -8,6 +8,7 @@ import requests
 
 from .models import OpenHumansMember
 from .tasks import xfer_to_open_humans
+from .fitbit_utils import get_fitbit_data
 
 # Open Humans settings
 OH_BASE_URL = 'https://www.openhumans.org'
@@ -125,5 +126,9 @@ def complete_fitbit(request):
 
     context = {'oh_id': oh_member.oh_id,
                'oh_proj_page': settings.OH_ACTIVITY_PAGE}
+
+
+
+
     return render(request, 'oh_data_source/complete.html',
                   context=context)

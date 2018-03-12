@@ -1,5 +1,5 @@
 """
-Django settings for oh_data_source template project.
+Django settings for oh_fitbit template project.
 """
 import os
 
@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     # Local apps. Update these if you add or change app names!
-    'oh_data_source',
+    'oh_fitbit',
 ]
 
 MIDDLEWARE = [
@@ -53,7 +53,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'oh_data_source.urls'
+ROOT_URLCONF = 'oh_fitbit.urls'
 
 TEMPLATES = [
     {
@@ -71,7 +71,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'oh_data_source.wsgi.application'
+WSGI_APPLICATION = 'oh_fitbit.wsgi.application'
 
 
 # Database setup uses Heroku recommendations:
@@ -119,7 +119,7 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'INFO',
         },
-        'oh_data_source': {
+        'oh_fitbit': {
             'handlers': ['console'],
             'level': 'DEBUG' if DEBUG else 'INFO',
         }

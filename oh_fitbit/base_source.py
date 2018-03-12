@@ -13,7 +13,7 @@ from urlparse import urljoin, urlsplit
 import click
 import requests
 
-from data_retrieval.files import copy_file_to_s3
+from data_retrieval import copy_file_to_s3
 
 logger = logging.getLogger(__name__)
 

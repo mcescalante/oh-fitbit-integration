@@ -4,6 +4,7 @@ import os
 import arrow
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.contrib.postgres.fields import JSONField
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 import requests
@@ -92,3 +93,22 @@ class OpenHumansMember(models.Model):
             self.refresh_token = data['refresh_token']
             self.token_expires = self.get_expiration(data['expires_in'])
             self.save()
+
+
+@python_2_unicode_compatible
+class CacheItem(models.Model):
+    '''
+    Cache request responses for fitbit data.
+    '''
+    id = models.AutoField(primary_key=True)
+    key = models.CharField(max_length=2014)
+    response = JSONField()
+    request_time = models.DateTimeField()
+
+    def __init__(self, key, response):
+        self.key = key
+        self.response = response
+        self.request_time = datetime.now()
+
+    def __str__(self):
+        return "<CacheItem(url='{}')>".format(self.url)

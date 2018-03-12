@@ -28,6 +28,10 @@ requests = "*"
 vine = "*"
 whitenoise = "*"
 wsgiref = "*"
+requests-respectful = "*"
+click = "*"
+boto = "*"
+python-social-auth = "*"
 
 
 [requires]

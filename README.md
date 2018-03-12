@@ -44,7 +44,7 @@ There is a [Swagger playground](https://dev.fitbit.com/build/reference/web-api/e
 
 The Fitbit API has rate limits which you can [read more about here](https://dev.fitbit.com/build/reference/web-api/basics/#rate-limits).
 
-## Potential "App Flow"
+## User Story / App Flow
 
 This is a potential "user story" for the new integration:
 

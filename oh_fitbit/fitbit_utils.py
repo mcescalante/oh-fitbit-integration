@@ -28,12 +28,12 @@ from models import CacheItem
 
 logger = logging.getLogger(__name__)
 
-if __name__ == '__main__':
-    from utilities import init_db
+# if __name__ == '__main__':
+#     from utilities import init_db
 
-    db = init_db()
-else:
-    from models import db  # noqa
+#     db = init_db()
+# else:
+#     from models import db  # noqa
 
 redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
 url_object = urlparse.urlparse(redis_url)
