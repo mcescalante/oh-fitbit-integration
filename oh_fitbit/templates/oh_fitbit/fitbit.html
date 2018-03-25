@@ -1,4 +1,4 @@
-{% extends 'oh_data_source/base.html' %}
+{% extends 'oh_fitbit/base.html' %}
 {% load static %}
 {% block content %}
 
@@ -10,7 +10,13 @@
       <p>
         Now you have to go to fitbit to authorize us to fetch your data from Fitbit.
       </p>
-
+      {{authorization_url}}
+      <a
+      class="btn btn-primary btn-lg"
+      href={{authorization_url}}
+      class="btn btn-default disabled">
+        Start with Open Humans authorization
+      </a>
 
     </div>
 

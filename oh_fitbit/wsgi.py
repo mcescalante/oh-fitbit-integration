@@ -1,5 +1,5 @@
 """
-WSGI config for oh_data_source_template project.
+WSGI config for oh_fitbit project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
@@ -12,7 +12,7 @@ import os
 from django.core.wsgi import get_wsgi_application
 from whitenoise.django import DjangoWhiteNoise
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "oh_data_source.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "oh_fitbit.settings")
 
 application = get_wsgi_application()
 application = DjangoWhiteNoise(application)

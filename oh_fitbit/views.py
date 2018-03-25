@@ -15,6 +15,10 @@ OH_BASE_URL = 'https://www.openhumans.org'
 
 APP_BASE_URL = os.getenv('APP_BASE_URL', 'http://127.0.0.1:5000')
 
+# Fitbit settings
+fitbit_authorize_url = 'https://www.fitbit.com/oauth2/authorize'
+fitbit_token_url = 'https://api.fitbit.com/oauth2/token'
+
 # Set up logging.
 logger = logging.getLogger(__name__)
 
@@ -89,7 +93,7 @@ def index(request):
     context = {'client_id': settings.OH_CLIENT_ID,
                'oh_proj_page': settings.OH_ACTIVITY_PAGE}
 
-    return render(request, 'oh_data_source/index.html', context=context)
+    return render(request, 'oh_fitbit/index.html', context=context)
 
 
 def complete_oh(request):
@@ -111,11 +115,15 @@ def complete_oh(request):
         user = oh_member.user
         login(request, user, backend='django.contrib.auth.backends.ModelBackend')
 
+        auth_url = 'https://www.fitbit.com/oauth2/authorize?response_type=code&client_id='+settings.FITBIT_CLIENT_ID+'&scope=activity%20nutrition%20heartrate%20location%20nutrition%20profile%20settings%20sleep%20social%20weight'
+
         # Initiate a data transfer task, then render 'complete.html'.
         # xfer_to_open_humans.delay(oh_id=oh_member.oh_id)
         context = {'oh_id': oh_member.oh_id,
-                   'oh_proj_page': settings.OH_ACTIVITY_PAGE}
-        return render(request, 'oh_data_source/fitbit.html',
+                   'oh_proj_page': settings.OH_ACTIVITY_PAGE,
+                   'authorization_url': auth_url}
+
+        return render(request, 'oh_fitbit/fitbit.html',
                       context=context)
 
     logger.debug('Invalid code exchange. User returned to starting page.')
@@ -123,12 +131,10 @@ def complete_oh(request):
 
 def complete_fitbit(request):
 
-
     context = {'oh_id': oh_member.oh_id,
-               'oh_proj_page': settings.OH_ACTIVITY_PAGE}
+               'oh_proj_page': settings.OH_ACTIVITY_PAGE,
+               }
 
 
-
-
-    return render(request, 'oh_data_source/complete.html',
+    return render(request, 'oh_fitbit/complete.html',
                   context=context)
