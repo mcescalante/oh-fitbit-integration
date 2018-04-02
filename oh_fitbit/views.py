@@ -7,6 +7,7 @@ from django.shortcuts import redirect, render
 import requests
 import base64
 import json
+import arrow
 
 from .models import OpenHumansMember, FitbitMember
 from .tasks import xfer_to_open_humans
@@ -166,17 +167,131 @@ def complete_fitbit(request):
             token_type=rjson['token_type'])
 
     # Fetch user's data
-    results = []
-    profile_url = 'https://api.fitbit.com/1/user/-/profile.json'
-    activity_overview = 'https://api.fitbit.com/1/user/-/activities.json'
-    
-    headers = {'Authorization': "Bearer %s" % fitbit_member.access_token}    
-
-    # results.append(requests.get(profile_url, headers=headers).json())
-    # results.append(requests.get(activity_overview, headers=headers).json())
-
-    print(results)
-
+    fetch_fitbit_data(fitbit_member, rjson['access_token'])
+ 
     context = {'oh_proj_page': settings.OH_ACTIVITY_PAGE}
     return render(request, 'oh_fitbit/complete.html',
                   context=context)
+
+
+def fetch_fitbit_data(fitbit_member, access_token):
+    '''
+    Fetches all of the fitbit data for a given user 
+    '''
+    fitbit_urls = [
+        # Requires the 'settings' scope, which we haven't asked for
+        # {'name': 'devices', 'url': '/-/devices.json', 'period': None},
+
+        {'name': 'activities-overview',
+         'url': '/{user_id}/activities.json',
+         'period': None},
+
+        # interday timeline data
+        {'name': 'heart',
+         'url': '/{user_id}/activities/heart/date/{start_date}/{end_date}.json',
+         'period': 'month'},
+        # MPB 2016-12-12: Although docs allowed for 'year' for this endpoint,
+        # switched to 'month' bc/ req for full year started resulting in 504.
+        {'name': 'tracker-activity-calories',
+         'url': '/{user_id}/activities/tracker/activityCalories/date/{start_date}/{end_date}.json',
+         'period': 'month'},
+        {'name': 'tracker-calories',
+         'url': '/{user_id}/activities/tracker/calories/date/{start_date}/{end_date}.json',
+         'period': 'year'},
+        {'name': 'tracker-distance',
+         'url': '/{user_id}/activities/tracker/distance/date/{start_date}/{end_date}.json',
+         'period': 'year'},
+        {'name': 'tracker-elevation',
+         'url': '/{user_id}/activities/tracker/elevation/date/{start_date}/{end_date}.json',
+         'period': 'year'},
+        {'name': 'tracker-floors',
+         'url': '/{user_id}/activities/tracker/floors/date/{start_date}/{end_date}.json',
+         'period': 'year'},
+        {'name': 'tracker-minutes-fairly-active',
+         'url': '/{user_id}/activities/tracker/minutesFairlyActive/date/{start_date}/{end_date}.json',
+         'period': 'year'},
+        {'name': 'tracker-minutes-lightly-active',
+         'url': '/{user_id}/activities/tracker/minutesLightlyActive/date/{start_date}/{end_date}.json',
+         'period': 'year'},
+        {'name': 'tracker-minutes-sedentary',
+         'url': '/{user_id}/activities/tracker/minutesSedentary/date/{start_date}/{end_date}.json',
+         'period': 'year'},
+        {'name': 'tracker-minutes-very-active',
+         'url': '/{user_id}/activities/tracker/minutesVeryActive/date/{start_date}/{end_date}.json',
+         'period': 'year'},
+        {'name': 'tracker-steps',
+         'url': '/{user_id}/activities/tracker/steps/date/{start_date}/{end_date}.json',
+         'period': 'year'},
+        {'name': 'weight-log',
+         'url': '/{user_id}/body/log/weight/date/{start_date}/{end_date}.json',
+         'period': 'month'},
+        {'name': 'weight',
+         'url': '/{user_id}/body/weight/date/{start_date}/{end_date}.json',
+         'period': 'year'},
+        {'name': 'sleep-awakenings',
+         'url': '/{user_id}/sleep/awakeningsCount/date/{start_date}/{end_date}.json',
+         'period': 'year'},
+        {'name': 'sleep-efficiency',
+         'url': '/{user_id}/sleep/efficiency/date/{start_date}/{end_date}.json',
+         'period': 'year'},
+        {'name': 'sleep-minutes-after-wakeup',
+         'url': '/{user_id}/sleep/minutesAfterWakeup/date/{start_date}/{end_date}.json',
+         'period': 'year'},
+        {'name': 'sleep-minutes',
+         'url': '/{user_id}/sleep/minutesAsleep/date/{start_date}/{end_date}.json',
+         'period': 'year'},
+        {'name': 'awake-minutes',
+         'url': '/{user_id}/sleep/minutesAwake/date/{start_date}/{end_date}.json',
+         'period': 'year'},
+        {'name': 'minutes-to-sleep',
+         'url': '/{user_id}/sleep/minutesToFallAsleep/date/{start_date}/{end_date}.json',
+         'period': 'year'},
+        {'name': 'sleep-start-time',
+         'url': '/{user_id}/sleep/startTime/date/{start_date}/{end_date}.json',
+         'period': 'year'},
+        {'name': 'time-in-bed',
+         'url': '/{user_id}/sleep/timeInBed/date/{start_date}/{end_date}.json',
+         'period': 'year'},
+    ]
+    intraday_urls = [
+        # intraday timeline data
+        # {'name': 'intraday-heart',
+        #  'url': '/-/activities/heart/date/{date}/1d/1sec.json',
+        #  'period': 'day'},
+        # {'name': 'intraday-steps',
+        #  'url': '/-/activities/steps/date/{date}/1d/1min.json',
+        #  'period': 'day'},
+    ]
+
+    # Get initial information about user from Fitbit
+    headers = {'Authorization': "Bearer %s" % access_token}  
+    query_result = requests.get('https://api.fitbit.com/1/user/-/profile.json', headers=headers)
+
+    # Refresh token if the result is 401
+    # TODO: update this so it just checks the expired field.
+    if query_result.status_code == 401:
+        print("old token", fitbit_member.access_token)
+        fitbit_member.refresh_tokens()
+        print("new token", fitbit_member.access_token)
+    
+    # Store the user ID since it's used in all future queries
+    user_id = query_result.json()['user']['encodedId']
+    member_since = query_result.json()['user']['memberSince']
+    start_date = arrow.get(member_since, 'YYYY-MM-DD').format('YYYY-MM-DD')
+
+    # Loop over URLs, format with user info.
+    results = {}
+    for url in fitbit_urls:
+        fitbit_api_base_url = 'https://api.fitbit.com/1/user'
+        final_url = fitbit_api_base_url + url['url'].format(user_id=user_id, 
+                                                            start_date=start_date, 
+                                                            end_date=arrow.utcnow().format('YYYY-MM-DD'))
+        print("Fetching data from: ", final_url)
+        # Fetch the data
+        r = requests.get(final_url, headers=headers)
+        # Append the results to results dictionary with url "name" as the key
+        results[url['name']] = r.json()
+
+    print(json.dumps(results)) # for debugging
+    return json.dumps(results)
+
