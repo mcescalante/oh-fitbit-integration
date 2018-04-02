@@ -5,8 +5,10 @@ from django.conf import settings
 from django.contrib.auth import login
 from django.shortcuts import redirect, render
 import requests
+import base64
+import json
 
-from .models import OpenHumansMember
+from .models import OpenHumansMember, FitbitMember
 from .tasks import xfer_to_open_humans
 from .fitbit_utils import get_fitbit_data
 
@@ -18,6 +20,7 @@ APP_BASE_URL = os.getenv('APP_BASE_URL', 'http://127.0.0.1:5000')
 # Fitbit settings
 fitbit_authorize_url = 'https://www.fitbit.com/oauth2/authorize'
 fitbit_token_url = 'https://api.fitbit.com/oauth2/token'
+
 
 # Set up logging.
 logger = logging.getLogger(__name__)
@@ -90,6 +93,7 @@ def index(request):
     """
     Starting page for app.
     """
+
     context = {'client_id': settings.OH_CLIENT_ID,
                'oh_proj_page': settings.OH_ACTIVITY_PAGE}
 
@@ -109,7 +113,6 @@ def complete_oh(request):
     oh_member = oh_code_to_member(code=code)
 
     if oh_member:
-
         # Log in the user.
         # (You may want this if connecting user with another OAuth process.)
         user = oh_member.user
@@ -131,10 +134,49 @@ def complete_oh(request):
 
 def complete_fitbit(request):
 
-    context = {'oh_id': oh_member.oh_id,
-               'oh_proj_page': settings.OH_ACTIVITY_PAGE,
-               }
+    code = request.GET['code']
 
+    # Create Base64 encoded string of clientid:clientsecret for the headers for Fitbit
+    # https://dev.fitbit.com/build/reference/web-api/oauth2/#access-token-request
+    encode_fitbit_auth = str(settings.FITBIT_CLIENT_ID) + ":" + str(settings.FITBIT_CLIENT_SECRET)
+    b64header = base64.b64encode(encode_fitbit_auth)
+    # Add the payload of code and grant_type. Construct headers
+    payload = {'code': code, 'grant_type': 'authorization_code'}
+    headers = {'Content-Type': 'application/x-www-form-urlencoded', 'Authorization': 'Basic %s' % b64header}
+    # Make request for access token
+    r = requests.post(fitbit_token_url, payload, headers=headers)
+    print(r.json())
 
+    rjson = r.json() 
+
+    oh_id = request.user.oh_member.oh_id
+    oh_user = OpenHumansMember.objects.get(oh_id=oh_id)
+
+    # Save the user as a FitbitMember and store tokens
+    try:
+        fitbit_member = FitbitMember.objects.get(userid=rjson['user_id'])
+    except:
+        fitbit_member = FitbitMember.objects.get_or_create(
+            user=oh_user,
+            userid=rjson['user_id'],
+            access_token=rjson['access_token'],
+            refresh_token=rjson['refresh_token'],
+            expires_in=rjson['expires_in'],
+            scope=rjson['scope'],
+            token_type=rjson['token_type'])
+
+    # Fetch user's data
+    results = []
+    profile_url = 'https://api.fitbit.com/1/user/-/profile.json'
+    activity_overview = 'https://api.fitbit.com/1/user/-/activities.json'
+    
+    headers = {'Authorization': "Bearer %s" % fitbit_member.access_token}    
+
+    # results.append(requests.get(profile_url, headers=headers).json())
+    # results.append(requests.get(activity_overview, headers=headers).json())
+
+    print(results)
+
+    context = {'oh_proj_page': settings.OH_ACTIVITY_PAGE}
     return render(request, 'oh_fitbit/complete.html',
                   context=context)

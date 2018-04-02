@@ -32,8 +32,7 @@ APP_BASE_URL = os.getenv('APP_BASE_URL', 'http://127.0.0.1:5000')
 
 # Fitbit configuration
 FITBIT_CLIENT_ID=os.getenv('FITBIT_CLIENT_ID')
-FITBIT_CLIENT_SECRET=os.getenv('FITBIT_CLIENT_ID')
-
+FITBIT_CLIENT_SECRET=os.getenv('FITBIT_CLIENT_SECRET')
 
 # Applications installed
 INSTALLED_APPS = [

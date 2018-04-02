@@ -30,7 +30,6 @@ def make_unique_username(base):
         except User.DoesNotExist:
             return name
 
-
 @python_2_unicode_compatible
 class OpenHumansMember(models.Model):
     """
@@ -38,7 +37,8 @@ class OpenHumansMember(models.Model):
 
     A User account is created for this Open Humans member.
     """
-    user = models.OneToOneField(User)
+    user = models.OneToOneField(User, related_name="oh_member", 
+                                on_delete=models.CASCADE)
     oh_id = models.CharField(max_length=16, primary_key=True, unique=True)
     access_token = models.CharField(max_length=256)
     refresh_token = models.CharField(max_length=256)
@@ -93,6 +93,20 @@ class OpenHumansMember(models.Model):
             self.refresh_token = data['refresh_token']
             self.token_expires = self.get_expiration(data['expires_in'])
             self.save()
+
+
+class FitbitMember(models.Model):
+    """
+    Store OAuth2 data for a Fitbit Member.
+    This is a one to one relationship with a OpenHumansMember object.
+    """
+    user = models.OneToOneField(OpenHumansMember, on_delete=models.CASCADE)
+    userid = models.CharField(max_length=255, unique=True, null=True)
+    access_token = models.CharField(max_length=255)
+    refresh_token = models.CharField(max_length=255)
+    expires_in = models.CharField(max_length=255)
+    scope = models.CharField(max_length=500)
+    token_type = models.CharField(max_length=255)
 
 
 @python_2_unicode_compatible
