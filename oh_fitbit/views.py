@@ -11,7 +11,7 @@ import arrow
 
 from .models import OpenHumansMember, FitbitMember
 from .tasks import xfer_to_open_humans
-from .fitbit_utils import get_fitbit_data
+# from .fitbit_utils import get_fitbit_data
 
 # Open Humans settings
 OH_BASE_URL = 'https://www.openhumans.org'
