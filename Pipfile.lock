@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "279675d0c9dd823c96d2244e0300cb5b0fe5b985ce61fc99f7970b654df22080"
+            "sha256": "90301e140d39a738e8c11f8f3ddc56f255f9ef054b6545eb155eb830d382d7ab"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -64,6 +64,7 @@
                 "sha256:24d7f2f94f7f3cb6061acb215685e5125fbcdc40a857eff9de22518820b0a4f4",
                 "sha256:702a91ade2968a82beb0db1e0766a6a273f33d4616a6ce8cde475d8e09853b20"
             ],
+            "markers": "python_version >= '3.0'",
             "version": "==0.5.0"
         },
         "dj-database-url": {
@@ -268,9 +269,8 @@
             "version": "==0.8.0"
         },
         "requests-respectful": {
-            "editable": true,
-            "git": "git@github.com:mcescalante/requests-respectful.git",
-            "ref": "d0f3e5328631130f14518c583d6b67790bd8f39e"
+            "editable": "true",
+            "git": "https://github.com/mcescalante/requests-respectful.git"
         },
         "six": {
             "hashes": [
