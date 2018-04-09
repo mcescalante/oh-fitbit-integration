@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "69899daa85e0c1176cb55fb1c247a9c60d1cf0af38983cf5a6badc83bb29ea7b"
+            "sha256": "279675d0c9dd823c96d2244e0300cb5b0fe5b985ce61fc99f7970b654df22080"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -268,8 +268,9 @@
             "version": "==0.8.0"
         },
         "requests-respectful": {
-            "editable": "true",
-            "git": "git@github.com:mcescalante/requests-respectful.git"
+            "editable": true,
+            "git": "git@github.com:mcescalante/requests-respectful.git",
+            "ref": "d0f3e5328631130f14518c583d6b67790bd8f39e"
         },
         "six": {
             "hashes": [
