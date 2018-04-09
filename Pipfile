@@ -1,39 +1,27 @@
 [[source]]
-
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
-
-[dev-packages]
-
-
-
 [packages]
-
-django = "*"
-amqp = "*"
-argparse = "*"
 arrow = "*"
-billiard = "*"
 celery = "*"
 dj-database-url = "*"
+django = "*"
 gunicorn = "*"
-kombu = "*"
-postgres = "*"
 "psycopg2" = "*"
-python-dateutil = "*"
-pytz = "*"
 requests = "*"
-vine = "*"
 whitenoise = "*"
-wsgiref = "*"
-requests-respectful = "*"
-click = "*"
-boto = "*"
 python-social-auth = "*"
+raven = "*"
+vcrpy = "*"
+pyyaml = "*"
+redis = "*"
+requests-respectful = { git = 'git@github.com:mcescalante/requests-respectful.git', editable = 'true' }
 
+[dev-packages]
+pylint = "*"
+"flake8" = "*"
 
 [requires]
-
-python_version = "2.7"
+python_version = "3.6"
