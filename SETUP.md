@@ -1,4 +1,4 @@
-# Setting up your development environment for this Nokia Health to Open Humans data transfer app
+# Setting up your development environment for this Fitbit to Open Humans data transfer app
 
 > Work through this guide to get this application running on your own machine
 

@@ -48,16 +48,15 @@ OH_DIRECT_UPLOAD = OH_API_BASE + '/project/files/upload/direct/'
 OH_DIRECT_UPLOAD_COMPLETE = OH_API_BASE + '/project/files/upload/complete/'
 OH_DELETE_FILES = OH_API_BASE + '/project/files/delete/'
 
-# Nokia Health configuration
-NOKIA_USER_PAGE = os.getenv('NOKIA_USER_PAGE')
-NOKIA_CONSUMER_KEY = os.getenv('NOKIA_CONSUMER_KEY')
-NOKIA_CONSUMER_SECRET = os.getenv('NOKIA_CONSUMER_SECRET')
+# Fitbit configuration
+FITBIT_CLIENT_ID=os.getenv('FITBIT_CLIENT_ID')
+FITBIT_CLIENT_SECRET=os.getenv('FITBIT_CLIENT_SECRET')
 
 if REMOTE is False:
-    NOKIA_CALLBACK_URL = 'http://127.0.0.1:5000/complete_nokia'
+    FITBIT_CALLBACK_URL = 'http://127.0.0.1:5000/complete/fitbit'
 else:
-    NOKIA_CALLBACK_URL =\
-        'http://oh-fitbit-integration.herokuapp.com/complete_nokia'
+    FITBIT_CALLBACK_URL =\
+        'http://oh-fitbit-integration.herokuapp.com/complete/fitbit'
 
 # Application definition
 

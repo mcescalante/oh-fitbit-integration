@@ -18,13 +18,6 @@ from .models import FitbitMember
 # Set up logging.
 logger = logging.getLogger(__name__)
 
-# OAuth1 for Nokia Health
-# Credentials obtained during the registration.
-client_key = settings.NOKIA_CONSUMER_KEY
-client_secret = settings.NOKIA_CONSUMER_SECRET
-callback_uri = settings.NOKIA_CALLBACK_URL
-oh_proj_page = settings.OH_ACTIVITY_PAGE
-
 # Fitbit settings
 fitbit_authorize_url = 'https://www.fitbit.com/oauth2/authorize'
 fitbit_token_url = 'https://api.fitbit.com/oauth2/token'
@@ -67,10 +60,11 @@ def complete_fitbit(request):
     # Create Base64 encoded string of clientid:clientsecret for the headers for Fitbit
     # https://dev.fitbit.com/build/reference/web-api/oauth2/#access-token-request
     encode_fitbit_auth = str(settings.FITBIT_CLIENT_ID) + ":" + str(settings.FITBIT_CLIENT_SECRET)
-    b64header = base64.b64encode(encode_fitbit_auth)
+    print(encode_fitbit_auth)
+    b64header = base64.b64encode(encode_fitbit_auth.encode("UTF-8")).decode("UTF-8")
     # Add the payload of code and grant_type. Construct headers
     payload = {'code': code, 'grant_type': 'authorization_code'}
-    headers = {'Content-Type': 'application/x-www-form-urlencoded', 'Authorization': 'Basic %s' % b64header}
+    headers = {'Content-Type': 'application/x-www-form-urlencoded', 'Authorization': 'Basic %s' % (b64header)}
     # Make request for access token
     r = requests.post(fitbit_token_url, payload, headers=headers)
     print(r.json())
@@ -228,7 +222,6 @@ def complete(request):
     Receive user from Open Humans. Store data, start upload.
     """
     logger.debug("Received user returning from Open Humans.")
-
     # Exchange code for token.
     # This creates an OpenHumansMember and associated user account.
     code = request.GET.get('code', '')
@@ -240,11 +233,12 @@ def complete(request):
         login(request, user,
               backend='django.contrib.auth.backends.ModelBackend')
 
-        # Initiate a data transfer task, then render `complete.html`.
-        xfer_to_open_humans.delay(oh_id=oh_member.oh_id)
+        auth_url = 'https://www.fitbit.com/oauth2/authorize?response_type=code&client_id='+settings.FITBIT_CLIENT_ID+'&scope=activity%20nutrition%20heartrate%20location%20nutrition%20profile%20settings%20sleep%20social%20weight'
+
         context = {'oh_id': oh_member.oh_id,
-                   'oh_proj_page': settings.OH_ACTIVITY_PAGE}
-        return render(request, 'main/complete.html',
+                   'oh_proj_page': settings.OH_ACTIVITY_PAGE,
+                   'authorization_url': auth_url}
+        return render(request, 'main/fitbit.html',
                       context=context)
 
     logger.debug('Invalid code exchange. User returned to starting page.')
@@ -261,10 +255,9 @@ def oh_code_to_member(code):
         data = {
             'grant_type': 'authorization_code',
             'redirect_uri':
-            '{}/complete'.format(settings.OPENHUMANS_APP_BASE_URL),
+            '{}/complete/oh'.format(settings.OPENHUMANS_APP_BASE_URL),
             'code': code,
         }
-
         req = requests.post(
             '{}/oauth2/token/'.format(settings.OPENHUMANS_OH_BASE_URL),
             data=data,
