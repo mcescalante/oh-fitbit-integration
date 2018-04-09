@@ -225,7 +225,7 @@ def fetch_fitbit_data(fitbit_member, access_token):
 
 def complete(request):
     """
-    Receive user from Open Humans and store.
+    Receive user from Open Humans. Store data, start upload.
     """
     logger.debug("Received user returning from Open Humans.")
 
@@ -240,31 +240,12 @@ def complete(request):
         login(request, user,
               backend='django.contrib.auth.backends.ModelBackend')
 
-        # Create an OAuth1 object, and obtain a request token
-        oauth = OAuth1(client_key, client_secret=client_secret,
-                       callback_uri=callback_uri)
-        r = requests.post(url=request_token_url, auth=oauth)
-
-        # Parse and save the resource owner key & secret (for use
-        # in nokia_complete callback)
-        credentials = parse_qs(r.text)
-        request.session['resource_owner_key'] =\
-            credentials.get('oauth_token')[0]
-        request.session['resource_owner_secret'] =\
-            credentials.get('oauth_token_secret')[0]
-
-        # Generate the authorization URL
-        authorize_url = authorization_url + '?oauth_token='
-        authorize_url = authorize_url + request.session['resource_owner_key']
-
-        # Render `complete.html`.
+        # Initiate a data transfer task, then render `complete.html`.
+        xfer_to_open_humans.delay(oh_id=oh_member.oh_id)
         context = {'oh_id': oh_member.oh_id,
-                   'oh_proj_page': settings.OH_ACTIVITY_PAGE,
-                   "redirect_url": authorize_url,
-                   'nokia_consumer_key': settings.NOKIA_CONSUMER_KEY,
-                   'nokia_callback_url': settings.NOKIA_CALLBACK_URL,
-                   }
-        return render(request, 'main/complete.html', context=context)
+                   'oh_proj_page': settings.OH_ACTIVITY_PAGE}
+        return render(request, 'main/complete.html',
+                      context=context)
 
     logger.debug('Invalid code exchange. User returned to starting page.')
     return redirect('/')
