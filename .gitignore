@@ -1,6 +1,9 @@
-.DS_Store
+db.sqlite3
+*.DS_Store
 *.pyc
 .env
 .env*
-db.sqlite3
+__pycache__
+*.py[cod]
+*$py.class
 staticfiles/*
