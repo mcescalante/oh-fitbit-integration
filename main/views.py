@@ -220,7 +220,6 @@ def fetch_fitbit_data(fitbit_member, access_token):
         # Append the results to results dictionary with url "name" as the key
         results[url['name']] = r.json()
 
-    print(json.dumps(results)) # for debugging
     return json.dumps(results)
 
 
