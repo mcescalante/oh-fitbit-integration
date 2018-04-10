@@ -69,7 +69,7 @@ def complete_fitbit(request):
     r = requests.post(fitbit_token_url, payload, headers=headers)
     print(r.json())
 
-    rjson = r.json() 
+    rjson = r.json()
 
     oh_id = request.user.oh_member.oh_id
     oh_user = OpenHumansMember.objects.get(oh_id=oh_id)
@@ -88,8 +88,15 @@ def complete_fitbit(request):
             token_type=rjson['token_type'])
 
     # Fetch user's data
-    fetch_fitbit_data(fitbit_member, rjson['access_token'])
- 
+    alldata = fetch_fitbit_data(fitbit_member, rjson['access_token'])
+
+    metadata = {
+        'tags': ['fitbit', 'tracker', 'activity'],
+        'description': 'File with Fitbit data',
+    }
+
+    xfer_to_open_humans.delay(alldata, oh_id=oh_id)
+
     context = {'oh_proj_page': settings.OH_ACTIVITY_PAGE}
     return render(request, 'main/complete.html',
                   context=context)
@@ -97,7 +104,7 @@ def complete_fitbit(request):
 
 def fetch_fitbit_data(fitbit_member, access_token):
     '''
-    Fetches all of the fitbit data for a given user 
+    Fetches all of the fitbit data for a given user
     '''
     fitbit_urls = [
         # Requires the 'settings' scope, which we haven't asked for
@@ -185,7 +192,7 @@ def fetch_fitbit_data(fitbit_member, access_token):
     ]
 
     # Get initial information about user from Fitbit
-    headers = {'Authorization': "Bearer %s" % access_token}  
+    headers = {'Authorization': "Bearer %s" % access_token}
     query_result = requests.get('https://api.fitbit.com/1/user/-/profile.json', headers=headers)
 
     # Refresh token if the result is 401
@@ -194,7 +201,7 @@ def fetch_fitbit_data(fitbit_member, access_token):
         print("old token", fitbit_member.access_token)
         fitbit_member.refresh_tokens()
         print("new token", fitbit_member.access_token)
-    
+
     # Store the user ID since it's used in all future queries
     user_id = query_result.json()['user']['encodedId']
     member_since = query_result.json()['user']['memberSince']
@@ -204,12 +211,12 @@ def fetch_fitbit_data(fitbit_member, access_token):
     results = {}
     for url in fitbit_urls:
         fitbit_api_base_url = 'https://api.fitbit.com/1/user'
-        final_url = fitbit_api_base_url + url['url'].format(user_id=user_id, 
-                                                            start_date=start_date, 
+        final_url = fitbit_api_base_url + url['url'].format(user_id=user_id,
+                                                            start_date=start_date,
                                                             end_date=arrow.utcnow().format('YYYY-MM-DD'))
         print("Fetching data from: ", final_url)
         # Fetch the data
-        r = requests.get(final_url, headers=headers)
+        r = rr.get(url=final_url, headers=headers, realms=["Fitbit"])
         # Append the results to results dictionary with url "name" as the key
         results[url['name']] = r.json()
 
