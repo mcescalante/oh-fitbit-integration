@@ -95,7 +95,7 @@ def complete_fitbit(request):
         'description': 'File with Fitbit data',
     }
 
-    xfer_to_open_humans.delay(alldata, oh_id=oh_id)
+    xfer_to_open_humans.delay(alldata, metadata, oh_id=oh_id)
 
     context = {'oh_proj_page': settings.OH_ACTIVITY_PAGE}
     return render(request, 'main/complete.html',
