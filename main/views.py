@@ -77,6 +77,12 @@ def complete_fitbit(request):
     # Save the user as a FitbitMember and store tokens
     try:
         fitbit_member = FitbitMember.objects.get(userid=rjson['user_id'])
+        fitbit_member.access_token = rjson['access_token']
+        fitbit_member.refresh_token = rjson['refresh_token']
+        fitbit_member.expires_in = rjson['expires_in']
+        fitbit_member.scope = rjson['scope']
+        fitbit_member.token_type = rjson['token_type']
+        fitbit_member.save()
     except:
         fitbit_member = FitbitMember.objects.get_or_create(
             user=oh_user,
