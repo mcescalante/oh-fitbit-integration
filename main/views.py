@@ -9,7 +9,8 @@ from requests_respectful import RespectfulRequester
 from django.contrib.auth import login
 from django.shortcuts import render, redirect
 from django.conf import settings
-from datauploader.tasks import xfer_to_open_humans
+from datauploader.tasks import (xfer_to_open_humans,
+                                make_request_respectful_get)
 from urllib.parse import parse_qs
 from open_humans.models import OpenHumansMember
 from .models import FitbitMember
@@ -36,10 +37,6 @@ if settings.REMOTE is True:
             "database": 0
         },
         safety_threshold=5)
-
-# Requests Respectful (rate limiting, waiting)
-rr = RespectfulRequester()
-rr.register_realm("Fitbit", max_requests=60, timespan=60)
 
 
 def index(request):
@@ -222,8 +219,10 @@ def fetch_fitbit_data(fitbit_member, access_token):
                                                             end_date=arrow.utcnow().format('YYYY-MM-DD'))
         print("Fetching data from: ", final_url)
         # Fetch the data
-        r = rr.get(url=final_url, headers=headers, realms=["Fitbit"])
+        r = make_request_respectful_get.delay('final_url', realms=["Fitbit"], headers=headers)
         # Append the results to results dictionary with url "name" as the key
+        print("printing r:")
+        print(r)
         results[url['name']] = r.json()
 
     return json.dumps(results)
