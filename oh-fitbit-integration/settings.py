@@ -13,6 +13,11 @@ https://docs.djangoproject.com/en/2.0/ref/settings/
 import os
 import dj_database_url
 import logging
+from env_tools import apply_env
+from requests_respectful import RespectfulRequester
+
+logger = logging.getLogger(__name__)
+apply_env()
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -49,14 +54,35 @@ OH_DIRECT_UPLOAD_COMPLETE = OH_API_BASE + '/project/files/upload/complete/'
 OH_DELETE_FILES = OH_API_BASE + '/project/files/delete/'
 
 # Fitbit configuration
-FITBIT_CLIENT_ID=os.getenv('FITBIT_CLIENT_ID')
-FITBIT_CLIENT_SECRET=os.getenv('FITBIT_CLIENT_SECRET')
+FITBIT_CLIENT_ID = os.getenv('FITBIT_CLIENT_ID')
+FITBIT_CLIENT_SECRET = os.getenv('FITBIT_CLIENT_SECRET')
 
 if REMOTE is False:
     FITBIT_CALLBACK_URL = 'http://127.0.0.1:5000/complete/fitbit'
 else:
     FITBIT_CALLBACK_URL =\
         'http://oh-fitbit-integration.herokuapp.com/complete/fitbit'
+
+
+# Requests Respectful (rate limiting, waiting)
+if REMOTE is True:
+    from urllib.parse import urlparse
+    url_object = urlparse(os.getenv('REDIS_URL'))
+    logger.info('Connecting to redis at %s:%s',
+                url_object.hostname,
+                url_object.port)
+    RespectfulRequester.configure(
+        redis={
+            "host": url_object.hostname,
+            "port": url_object.port,
+            "password": url_object.password,
+            "database": 0
+        },
+        safety_threshold=5)
+
+# This creates a Realm called "source" that allows 60 requests per minute max.
+rr = RespectfulRequester()
+rr.register_realm("Fitbit", max_requests=60, timespan=60)
 
 # Application definition
 
