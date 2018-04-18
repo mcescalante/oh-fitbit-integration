@@ -85,7 +85,7 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
-ROOT_URLCONF = 'oh-fitbit-integration.urls'
+ROOT_URLCONF = 'fitbit.urls'
 
 TEMPLATES = [
     {
@@ -103,7 +103,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'oh-fitbit-integration.wsgi.application'
+WSGI_APPLICATION = 'fitbit.wsgi.application'
 
 
 # Database
