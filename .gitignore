@@ -1,4 +1,5 @@
 db.sqlite3
+celerybeat-schedule.db
 *.DS_Store
 *.pyc
 .env

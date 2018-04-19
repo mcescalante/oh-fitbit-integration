@@ -64,9 +64,9 @@ class OpenHumansMember(models.Model):
             token_expires=cls.get_expiration(expires_in))
         return oh_member
 
-    def __str__(self):
-        return "<OpenHumansMember(oh_id='{}')>".format(
-            self.oh_id)
+    # def __str__(self):
+    #     return "<OpenHumansMember(oh_id='{}')>".format(
+    #         self.oh_id)
 
     def get_access_token(self,
                          client_id=settings.OPENHUMANS_CLIENT_ID,
@@ -93,6 +93,7 @@ class OpenHumansMember(models.Model):
             auth=requests.auth.HTTPBasicAuth(client_id, client_secret))
         if response.status_code == 200:
             data = response.json()
+            print(data)
             self.access_token = data['access_token']
             self.refresh_token = data['refresh_token']
             self.token_expires = self.get_expiration(data['expires_in'])

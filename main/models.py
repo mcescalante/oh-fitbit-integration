@@ -9,7 +9,7 @@ class FitbitMember(models.Model):
     Store OAuth2 data for a Fitbit Member.
     This is a one to one relationship with a OpenHumansMember object.
     """
-    user = models.OneToOneField(OpenHumansMember, on_delete=models.CASCADE)
+    user = models.OneToOneField(OpenHumansMember, related_name="fitbit_member", on_delete=models.CASCADE)
     userid = models.CharField(max_length=255, unique=True, null=True)
     access_token = models.CharField(max_length=255)
     refresh_token = models.CharField(max_length=255)
