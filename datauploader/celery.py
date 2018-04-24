@@ -39,12 +39,11 @@ app.conf.update({
 })
 
 # Set up Celery Beat (periodic/timed tasks)
-@app.on_after_configure.connect
-def setup_periodic_tasks(sender, **kwargs):
-    # Calls test('hello') every 10 seconds.
-    sender.add_periodic_task(10.0, test.s('hello'), name='add every 10')
-
-
+# Commented out until we are sure of if we want to use celery beat
+# @app.on_after_configure.connect
+# def setup_periodic_tasks(sender, **kwargs):
+#     # Calls test('hello') every 10 seconds.
+#     sender.add_periodic_task(10.0, test.s('hello'), name='add every 10')
 
 # Using a string here means the worker will not have to
 # pickle the object when using Windows.

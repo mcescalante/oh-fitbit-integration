@@ -4,8 +4,10 @@ import os
 import base64
 import json
 import arrow
+import ohapi
 
-from requests_respectful import RespectfulRequester
+from requests_respectful import (RespectfulRequester,
+                                 RequestsRespectfulRateLimitedError)
 from django.contrib.auth import login
 from django.shortcuts import render, redirect
 from django.conf import settings
@@ -39,7 +41,7 @@ if settings.REMOTE is True:
 
 # Requests Respectful (rate limiting, waiting)
 rr = RespectfulRequester()
-rr.register_realm("Fitbit", max_requests=60, timespan=60)
+rr.register_realm("Fitbit", max_requests=3600, timespan=3600)
 
 
 def index(request):
@@ -93,7 +95,10 @@ def complete_fitbit(request):
             scope=rjson['scope'],
             token_type=rjson['token_type'])
 
-    # Fetch user's data
+    # Fetch user's existing data from OH
+    # We are going to use the pip package open-humans-api for this  
+
+    # Fetch user's data from Fitbit (update the data if it already existed)
     alldata = fetch_fitbit_data(fitbit_member, rjson['access_token'])
 
     metadata = {
@@ -108,7 +113,18 @@ def complete_fitbit(request):
                   context=context)
 
 
-def fetch_fitbit_data(fitbit_member, access_token):
+class RateLimitException(Exception):
+    """
+    An exception that is raised if we reach a request rate cap.
+    """
+
+    # TODO: add the source of the rate limit we hit for logging (fitit,
+    # internal global fitbit, internal user-specific fitbit)
+
+    pass
+
+
+def fetch_fitbit_data(fitbit_member, access_token, fitbit_data=None):
     '''
     Fetches all of the fitbit data for a given user
     '''
@@ -187,15 +203,11 @@ def fetch_fitbit_data(fitbit_member, access_token):
          'url': '/{user_id}/sleep/timeInBed/date/{start_date}/{end_date}.json',
          'period': 'year'},
     ]
-    intraday_urls = [
-        # intraday timeline data
-        # {'name': 'intraday-heart',
-        #  'url': '/-/activities/heart/date/{date}/1d/1sec.json',
-        #  'period': 'day'},
-        # {'name': 'intraday-steps',
-        #  'url': '/-/activities/steps/date/{date}/1d/1min.json',
-        #  'period': 'day'},
-    ]
+
+    # Set up user realm since rate limiting is per-user
+    user_realm = 'fitbit-{}'.format(fitbit_member.oh_member.oh_id)
+    rr.register_realm(user_realm, max_requests=150, timespan=3600)
+    rr.update_realm(user_realm, max_requests=150, timespan=3600)
 
     # Get initial information about user from Fitbit
     headers = {'Authorization': "Bearer %s" % access_token}
@@ -204,9 +216,7 @@ def fetch_fitbit_data(fitbit_member, access_token):
     # Refresh token if the result is 401
     # TODO: update this so it just checks the expired field.
     if query_result.status_code == 401:
-        print("old token", fitbit_member.access_token)
-        fitbit_member.refresh_tokens()
-        print("new token", fitbit_member.access_token)
+        fitbit_member._refresh_tokens()
 
     # Store the user ID since it's used in all future queries
     user_id = query_result.json()['user']['encodedId']
@@ -220,13 +230,19 @@ def fetch_fitbit_data(fitbit_member, access_token):
         final_url = fitbit_api_base_url + url['url'].format(user_id=user_id,
                                                             start_date=start_date,
                                                             end_date=arrow.utcnow().format('YYYY-MM-DD'))
-        print("Fetching data from: ", final_url)
         # Fetch the data
-        r = rr.get(url=final_url, headers=headers, realms=["Fitbit"])
-        # Append the results to results dictionary with url "name" as the key
-        results[url['name']] = r.json()
+        try:
+            r = rr.get(url=final_url, 
+                    headers=headers, 
+                    realms=["Fitbit", 'fitbit-{}'.format(fitbit_member.oh_member.oh_id)])
+            # Append the results to results dictionary with url "name" as the key
+            results[url['name']] = r.json()
+        except RequestsRespectfulRateLimitedError:
+            logging.info('Requests-respectful reports rate limit hit.')
+            raise RateLimitException()
 
     return json.dumps(results)
+
 
 
 def complete(request):
