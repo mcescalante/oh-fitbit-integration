@@ -1,4 +1,5 @@
 db.sqlite3
+celerybeat-schedule.db
 *.DS_Store
 *.pyc
 .env
@@ -7,3 +8,4 @@ __pycache__
 *.py[cod]
 *$py.class
 staticfiles/*
+.vscode/*

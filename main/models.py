@@ -1,7 +1,9 @@
 from django.db import models
 from django.conf import settings
 from open_humans.models import OpenHumansMember
+from datetime import timedelta
 import requests
+import arrow
 
 
 class FitbitMember(models.Model):
@@ -9,7 +11,7 @@ class FitbitMember(models.Model):
     Store OAuth2 data for a Fitbit Member.
     This is a one to one relationship with a OpenHumansMember object.
     """
-    user = models.OneToOneField(OpenHumansMember, on_delete=models.CASCADE)
+    user = models.OneToOneField(OpenHumansMember, related_name="fitbit_member", on_delete=models.CASCADE)
     userid = models.CharField(max_length=255, unique=True, null=True)
     access_token = models.CharField(max_length=255)
     refresh_token = models.CharField(max_length=255)
@@ -17,8 +19,11 @@ class FitbitMember(models.Model):
     scope = models.CharField(max_length=500)
     token_type = models.CharField(max_length=255)
 
-    @classmethod
-    def refresh_tokens(self):
+    @staticmethod
+    def get_expiration(expires_in):
+        return (arrow.now() + timedelta(seconds=expires_in)).format()
+
+    def _refresh_tokens(self):
         """
         Refresh access token.
         """
