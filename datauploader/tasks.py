@@ -10,11 +10,14 @@ import json
 import shutil
 import tempfile
 import requests
+import arrow
 from celery import shared_task
 from django.conf import settings
 from open_humans.models import OpenHumansMember
 from datetime import datetime
 from fitbit.settings import rr
+from main.models import FitbitMember
+from ohapi import api
 from requests_respectful import (RespectfulRequester,
                                  RequestsRespectfulRateLimitedError)
 
@@ -34,7 +37,7 @@ class RateLimitException(Exception):
     pass
 
 @shared_task
-def fetch_fitbit_data(fitbit_member, access_token, fitbit_data=None):
+def fetch_fitbit_data(fitbit_member_id, access_token, fitbit_data=None):
     '''
     Fetches all of the fitbit data for a given user
     '''
@@ -112,6 +115,8 @@ def fetch_fitbit_data(fitbit_member, access_token, fitbit_data=None):
          'url': '/{user_id}/sleep/timeInBed/date/{start_date}/{end_date}.json',
          'period': 'year'},
     ]
+
+    fitbit_member = FitbitMember.objects.get(id=fitbit_member_id)
 
     # Set up user realm since rate limiting is per-user
     print(fitbit_member.user)
@@ -235,6 +240,19 @@ def fetch_fitbit_data(fitbit_member, access_token, fitbit_data=None):
 
     print(fitbit_data)
     return fitbit_data
+
+
+def get_existing_fitbit(oh_access_token):
+    member = api.exchange_oauth2_member(oh_access_token)
+    for dfile in member['data']:
+        if 'fitbit' in dfile['metadata']['tags']:
+            # get file here and read the json into memory
+            tf_in = tempfile.NamedTemporaryFile(suffix='.json')
+            tf_in.write(requests.get(dfile['download_url']).content)
+            tf_in.flush()
+            fitbit_data = json.load(open(tf_in.name))
+            return fitbit_data
+    return []
 
 
 @shared_task

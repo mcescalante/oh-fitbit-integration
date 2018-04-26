@@ -4,12 +4,13 @@ import os
 import base64
 import json
 import arrow
-import tempfile
 
 from django.contrib.auth import login
 from django.shortcuts import render, redirect
 from django.conf import settings
-from datauploader.tasks import xfer_to_open_humans
+from datauploader.tasks import (xfer_to_open_humans,
+                                fetch_fitbit_data,
+                                get_existing_fitbit)
 from urllib.parse import parse_qs
 from open_humans.models import OpenHumansMember
 from .models import FitbitMember
@@ -81,7 +82,7 @@ def complete_fitbit(request):
     # print(fitbit_data)
 
     # Fetch user's data from Fitbit (update the data if it already existed)
-    alldata = fetch_fitbit_data(fitbit_member, rjson['access_token'], fitbit_data)
+    alldata = fetch_fitbit_data.delay(fitbit_member.id, rjson['access_token'], fitbit_data)
 
     # metadata = {
     #     'tags': ['fitbit', 'tracker', 'activity'],
@@ -93,19 +94,6 @@ def complete_fitbit(request):
     context = {'oh_proj_page': settings.OH_ACTIVITY_PAGE}
     return render(request, 'main/complete.html',
                   context=context)
-
-def get_existing_fitbit(oh_access_token):
-    member = api.exchange_oauth2_member(oh_access_token)
-    for dfile in member['data']:
-        if 'fitbit' in dfile['metadata']['tags']:
-            # get file here and read the json into memory
-            tf_in = tempfile.NamedTemporaryFile(suffix='.json')
-            tf_in.write(requests.get(dfile['download_url']).content)
-            tf_in.flush()
-            fitbit_data = json.load(open(tf_in.name))
-            return fitbit_data
-    return []
-
 
 def complete(request):
     """
