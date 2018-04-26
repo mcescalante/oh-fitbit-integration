@@ -4,7 +4,7 @@ import os
 import base64
 import json
 import arrow
-import ohapi
+import tempfile
 
 from requests_respectful import (RespectfulRequester,
                                  RequestsRespectfulRateLimitedError)
@@ -15,6 +15,7 @@ from datauploader.tasks import xfer_to_open_humans
 from urllib.parse import parse_qs
 from open_humans.models import OpenHumansMember
 from .models import FitbitMember
+from ohapi import api
 
 
 # Set up logging.
@@ -69,7 +70,7 @@ def complete_fitbit(request):
     headers = {'Content-Type': 'application/x-www-form-urlencoded', 'Authorization': 'Basic %s' % (b64header)}
     # Make request for access token
     r = requests.post(fitbit_token_url, payload, headers=headers)
-    print(r.json())
+    # print(r.json())
 
     rjson = r.json()
 
@@ -97,21 +98,34 @@ def complete_fitbit(request):
 
     # Fetch user's existing data from OH
     # We are going to use the pip package open-humans-api for this  
+    fitbit_data = get_existing_fitbit(oh_user.access_token)
+    # print(fitbit_data)
 
     # Fetch user's data from Fitbit (update the data if it already existed)
-    alldata = fetch_fitbit_data(fitbit_member, rjson['access_token'])
+    alldata = fetch_fitbit_data(fitbit_member, rjson['access_token'], fitbit_data)
 
-    metadata = {
-        'tags': ['fitbit', 'tracker', 'activity'],
-        'description': 'File with Fitbit data',
-    }
+    # metadata = {
+    #     'tags': ['fitbit', 'tracker', 'activity'],
+    #     'description': 'File with Fitbit data',
+    # }
 
-    xfer_to_open_humans.delay(alldata, metadata, oh_id=oh_id)
+    # xfer_to_open_humans.delay(alldata, metadata, oh_id=oh_id)
 
     context = {'oh_proj_page': settings.OH_ACTIVITY_PAGE}
     return render(request, 'main/complete.html',
                   context=context)
 
+def get_existing_fitbit(oh_access_token):
+    member = api.exchange_oauth2_member(oh_access_token)
+    for dfile in member['data']:
+        if 'fitbit' in dfile['metadata']['tags']:
+            # get file here and read the json into memory
+            tf_in = tempfile.NamedTemporaryFile(suffix='.json')
+            tf_in.write(requests.get(dfile['download_url']).content)
+            tf_in.flush()
+            fitbit_data = json.load(open(tf_in.name))
+            return fitbit_data
+    return []
 
 class RateLimitException(Exception):
     """
@@ -205,43 +219,147 @@ def fetch_fitbit_data(fitbit_member, access_token, fitbit_data=None):
     ]
 
     # Set up user realm since rate limiting is per-user
-    user_realm = 'fitbit-{}'.format(fitbit_member.oh_member.oh_id)
+    print(fitbit_member.user)
+    user_realm = 'fitbit-{}'.format(fitbit_member.user.oh_id)
     rr.register_realm(user_realm, max_requests=150, timespan=3600)
     rr.update_realm(user_realm, max_requests=150, timespan=3600)
 
     # Get initial information about user from Fitbit
     headers = {'Authorization': "Bearer %s" % access_token}
-    query_result = requests.get('https://api.fitbit.com/1/user/-/profile.json', headers=headers)
+    query_result = requests.get('https://api.fitbit.com/1/user/-/profile.json', headers=headers).json()
+
+    # Store the user ID since it's used in all future queries
+    user_id = query_result['user']['encodedId']
+    member_since = query_result['user']['memberSince']
+    start_date = arrow.get(member_since, 'YYYY-MM-DD')
 
     # Refresh token if the result is 401
     # TODO: update this so it just checks the expired field.
-    if query_result.status_code == 401:
-        fitbit_member._refresh_tokens()
+    # if query_result.status_code == 401:
+    #     fitbit_member._refresh_tokens()
 
-    # Store the user ID since it's used in all future queries
-    user_id = query_result.json()['user']['encodedId']
-    member_since = query_result.json()['user']['memberSince']
-    start_date = arrow.get(member_since, 'YYYY-MM-DD').format('YYYY-MM-DD')
+    # Reset data if user account ID has changed.
+    if 'profile' in fitbit_data:
+        if fitbit_data['profile']['encodedId'] != user_id:
+            logging.info(
+                'User ID changed from {} to {}. Resetting all data.'.format(
+                    fitbit_data['profile']['encodedId'], user_id))
+            fitbit_data = defaultdict(dict)
+        else:
+            logging.debug('User ID ({}) matches old data.'.format(user_id))
 
-    # Loop over URLs, format with user info.
-    results = {}
-    for url in fitbit_urls:
+    fitbit_data['profile'] = {
+        'averageDailySteps': query_result['user']['averageDailySteps'],
+        'encodedId': user_id,
+        'height': query_result['user']['height'],
+        'memberSince': member_since,
+        'strideLengthRunning': query_result['user']['strideLengthRunning'],
+        'strideLengthWalking': query_result['user']['strideLengthWalking'],
+        'weight': query_result['user']['weight'],
+    }
+
+    # Some block about if the period is none
+    for url in [u for u in fitbit_urls if u['period'] is None]:
+        if not user_id and 'profile' in fitbit_data:
+            user_id = fitbit_data['profile']['user']['encodedId']
+
+        # Build URL
         fitbit_api_base_url = 'https://api.fitbit.com/1/user'
-        final_url = fitbit_api_base_url + url['url'].format(user_id=user_id,
-                                                            start_date=start_date,
-                                                            end_date=arrow.utcnow().format('YYYY-MM-DD'))
+        final_url = fitbit_api_base_url + url['url'].format(user_id=user_id)
         # Fetch the data
         try:
+            print(final_url)
             r = rr.get(url=final_url, 
                     headers=headers, 
-                    realms=["Fitbit", 'fitbit-{}'.format(fitbit_member.oh_member.oh_id)])
-            # Append the results to results dictionary with url "name" as the key
-            results[url['name']] = r.json()
+                    realms=["Fitbit", 'fitbit-{}'.format(fitbit_member.user.oh_id)])
         except RequestsRespectfulRateLimitedError:
             logging.info('Requests-respectful reports rate limit hit.')
             raise RateLimitException()
 
-    return json.dumps(results)
+        fitbit_data[url['name']] = r
+
+    # Loop over URLs, format with user info.
+    # results = {}
+    # for url in fitbit_urls:
+    #     fitbit_api_base_url = 'https://api.fitbit.com/1/user'
+    #     final_url = fitbit_api_base_url + url['url'].format(user_id=user_id,
+    #                                                         start_date=start_date,
+    #                                                         end_date=arrow.utcnow().format('YYYY-MM-DD'))
+        # Fetch the data
+        # try:
+        #     r = rr.get(url=final_url, 
+        #             headers=headers, 
+        #             realms=["Fitbit", 'fitbit-{}'.format(fitbit_member.oh_member.oh_id)])
+        #     # Append the results to results dictionary with url "name" as the key
+        #     results[url['name']] = r.json()
+        # except RequestsRespectfulRateLimitedError:
+        #     logging.info('Requests-respectful reports rate limit hit.')
+        #     raise RateLimitException()
+            # Moves integration
+            # print('requeued processing with 60 secs delay')
+            # process_moves.apply_async((oh_member.oh_id), countdown=61)
+
+    #Period year URLs
+    for url in [u for u in fitbit_urls if u['period'] == 'year']:
+        years = arrow.Arrow.range('year', start_date.floor('year'),
+                                arrow.get())
+        for year_date in years:
+            year = year_date.format('YYYY')
+
+            if year in fitbit_data[url['name']]:
+                logger.info('Skip retrieval {}: {}'.format(url['name'], year))
+                continue
+
+            logger.info('Retrieving %s: %s', url['name'], year)
+            # Build URL
+            fitbit_api_base_url = 'https://api.fitbit.com/1/user'
+            final_url = fitbit_api_base_url + url['url'].format(user_id=user_id,
+                                                                start_date=year_date.floor('year').format('YYYY-MM-DD'),
+                                                                end_date=year_date.ceil('year').format('YYYY-MM-DD'))
+            # Fetch the data
+            try:
+                print(final_url)
+                r = rr.get(url=final_url, 
+                        headers=headers, 
+                        realms=["Fitbit", 'fitbit-{}'.format(fitbit_member.user.oh_id)])
+            except RequestsRespectfulRateLimitedError:
+                logging.info('Requests-respectful reports rate limit hit.')
+                raise RateLimitException()
+
+            fitbit_data[url['name']][str(year)] = r
+
+    for url in [u for u in fitbit_urls if u['period'] == 'month']:
+        months = arrow.Arrow.range('month', start_date.floor('month'),
+                                arrow.get())
+        for month_date in months:
+            month = month_date.format('YYYY-MM')
+
+            if month in fitbit_data[url['name']]:
+                logger.info('Skip retrieval {}: {}'.format(url['name'], month))
+                continue
+
+            logger.info('Retrieving %s: %s', url['name'], month)
+            # Build URL
+            fitbit_api_base_url = 'https://api.fitbit.com/1/user'
+            final_url = fitbit_api_base_url + url['url'].format(user_id=user_id,
+                                                                start_date=month_date.floor('month').format('YYYY-MM-DD'),
+                                                                end_date=month_date.ceil('month').format('YYYY-MM-DD'))
+            # Fetch the data
+            try:
+                print(final_url)
+                r = rr.get(url=final_url, 
+                        headers=headers, 
+                        realms=["Fitbit", 'fitbit-{}'.format(fitbit_member.user.oh_id)])
+            except RequestsRespectfulRateLimitedError:
+                logging.info('Requests-respectful reports rate limit hit.')
+                print('Requests-respectful reports rate limit hit.')
+                print(r.text)
+                raise RateLimitException()
+
+            fitbit_data[url['name']][month] = r
+
+    print(fitbit_data)
+    return fitbit_data
 
 
 
