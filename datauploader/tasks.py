@@ -125,7 +125,7 @@ def fetch_fitbit_data(fitbit_member_id, access_token, fitbit_data=None):
     rr.update_realm(user_realm, max_requests=150, timespan=3600)
 
     # Get initial information about user from Fitbit
-    headers = {'Authorization': "Bearer %s" % access_token}
+    headers = {'Authorization': "Bearer %s" % fitbit_member.access_token}
     query_result = requests.get('https://api.fitbit.com/1/user/-/profile.json', headers=headers).json()
 
     # Store the user ID since it's used in all future queries
@@ -172,6 +172,7 @@ def fetch_fitbit_data(fitbit_member_id, access_token, fitbit_data=None):
             r = rr.get(url=final_url, 
                     headers=headers, 
                     realms=["Fitbit", 'fitbit-{}'.format(fitbit_member.user.oh_id)])
+            print(r.text)
         except RequestsRespectfulRateLimitedError:
             logging.info('Requests-respectful reports rate limit hit.')
             raise RateLimitException()
@@ -239,6 +240,7 @@ def fetch_fitbit_data(fitbit_member_id, access_token, fitbit_data=None):
             fitbit_data[url['name']][month] = r
 
     print(fitbit_data)
+    # replace_fitbit(fitbit_member.user, fitbit_data)
     return fitbit_data
 
 
@@ -253,6 +255,35 @@ def get_existing_fitbit(oh_access_token):
             fitbit_data = json.load(open(tf_in.name))
             return fitbit_data
     return []
+
+
+def replace_fitbit(oh_member, fitbit_data):
+    print("replace function started")
+    # delete old file and upload new to open humans
+    tmp_directory = tempfile.mkdtemp()
+    metadata = {
+        'description':
+        'FItbit data.',
+        'tags': ['Fitbit', 'activity', 'steps'],
+        'updated_at': str(datetime.utcnow()),
+        }
+    out_file = os.path.join(tmp_directory, 'fitbit-data.json')
+    logger.debug('deleted old file for {}'.format(oh_member.oh_id))
+    deleter = api.delete_file(oh_member.access_token,
+                    oh_member.oh_id,
+                    file_basename="fitbit-data.json")
+    # print("delete response")
+    print(deleter)
+    with open(out_file, 'w') as json_file:
+        json.dump(fitbit_data, json_file)
+        print(json.dump(fitbit_data, json_file))
+        json_file.flush()
+    addr = api.upload_aws(out_file, metadata,
+                   oh_member.access_token,
+                   project_member_id=oh_member.oh_id)
+    # print("add response")
+    print(addr)
+    logger.debug('uploaded new file for {}'.format(oh_member.oh_id))
 
 
 @shared_task
