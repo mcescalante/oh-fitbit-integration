@@ -14,6 +14,8 @@ import os
 import dj_database_url
 import logging
 
+logger = logging.getLogger(__name__)
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -125,20 +127,20 @@ if REMOTE:
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.\
-                 UserAttributeSimilarityValidator',
+        'NAME': ('django.contrib.auth.password_validation.'
+                 'UserAttributeSimilarityValidator'),
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.\
-                 MinimumLengthValidator',
+        'NAME': ('django.contrib.auth.password_validation.'
+                 'MinimumLengthValidator'),
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.\
-                 CommonPasswordValidator',
+        'NAME': ('django.contrib.auth.password_validation.'
+                 'CommonPasswordValidator'),
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.\
-                 NumericPasswordValidator',
+        'NAME': ('django.contrib.auth.password_validation.'
+                 'NumericPasswordValidator'),
     },
 ]
 
