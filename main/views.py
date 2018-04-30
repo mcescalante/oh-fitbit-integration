@@ -63,7 +63,7 @@ def complete_fitbit(request):
         fitbit_member.scope = rjson['scope']
         fitbit_member.token_type = rjson['token_type']
         fitbit_member.save()
-    except:
+    except DataError:
         fitbit_member = FitbitMember.objects.get_or_create(
             user=oh_user,
             userid=rjson['user_id'],
