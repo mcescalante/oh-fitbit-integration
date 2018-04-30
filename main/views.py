@@ -131,6 +131,7 @@ def oh_code_to_member(code):
     """
     if settings.OPENHUMANS_CLIENT_SECRET and \
        settings.OPENHUMANS_CLIENT_ID and code:
+        print('{}/complete/oh'.format(settings.OPENHUMANS_APP_BASE_URL))
         data = {
             'grant_type': 'authorization_code',
             'redirect_uri':
