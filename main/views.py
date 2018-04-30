@@ -64,7 +64,7 @@ def complete_fitbit(request):
         fitbit_member.token_type = rjson['token_type']
         fitbit_member.save()
     except FitbitMember.DoesNotExist:
-        fitbit_member = FitbitMember.objects.get_or_create(
+        fitbit_member, created = FitbitMember.objects.get_or_create(
             user=oh_user,
             userid=rjson['user_id'],
             access_token=rjson['access_token'],
@@ -80,6 +80,7 @@ def complete_fitbit(request):
 
 
     # Fetch user's data from Fitbit (update the data if it already existed)
+    print(fitbit_member)
     alldata = fetch_fitbit_data.delay(fitbit_member.id, rjson['access_token'])
 
     # replace_fitbit(fitbit_member.user, fitbit_data)
