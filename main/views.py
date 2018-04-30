@@ -8,8 +8,6 @@ import arrow
 from django.contrib.auth import login
 from django.shortcuts import render, redirect
 from django.conf import settings
-from django.db import DataError
-from django.core.exceptions import ObjectDoesNotExist
 from datauploader.tasks import fetch_fitbit_data
 from urllib.parse import parse_qs
 from open_humans.models import OpenHumansMember
@@ -65,7 +63,7 @@ def complete_fitbit(request):
         fitbit_member.scope = rjson['scope']
         fitbit_member.token_type = rjson['token_type']
         fitbit_member.save()
-    except FitbitMember.ObjectDoesNotExist:
+    except FitbitMember.DoesNotExist:
         fitbit_member = FitbitMember.objects.get_or_create(
             user=oh_user,
             userid=rjson['user_id'],
