@@ -240,7 +240,7 @@ def fetch_fitbit_data(fitbit_member_id, access_token, fitbit_data=None):
             fitbit_data[url['name']][month] = r
 
     print(fitbit_data)
-    # replace_fitbit(fitbit_member.user, fitbit_data)
+    replace_fitbit(fitbit_member.user, fitbit_data)
     return fitbit_data
 
 
@@ -272,7 +272,7 @@ def replace_fitbit(oh_member, fitbit_data):
     deleter = api.delete_file(oh_member.access_token,
                     oh_member.oh_id,
                     file_basename="fitbit-data.json")
-    # print("delete response")
+    print("delete response")
     print(deleter)
     with open(out_file, 'w') as json_file:
         json.dump(fitbit_data, json_file)
@@ -281,7 +281,7 @@ def replace_fitbit(oh_member, fitbit_data):
     addr = api.upload_aws(out_file, metadata,
                    oh_member.access_token,
                    project_member_id=oh_member.oh_id)
-    # print("add response")
+    print("add response")
     print(addr)
     logger.debug('uploaded new file for {}'.format(oh_member.oh_id))
 
