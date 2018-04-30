@@ -8,6 +8,7 @@ import arrow
 from django.contrib.auth import login
 from django.shortcuts import render, redirect
 from django.conf import settings
+from django.db import DataError
 from datauploader.tasks import fetch_fitbit_data
 from urllib.parse import parse_qs
 from open_humans.models import OpenHumansMember
