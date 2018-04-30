@@ -116,7 +116,11 @@ def fetch_fitbit_data(fitbit_member_id, access_token, fitbit_data=None):
          'period': 'year'},
     ]
 
+    # Get Fitbit member object
     fitbit_member = FitbitMember.objects.get(id=fitbit_member_id)
+
+    # Get existing data as currently stored on OH
+    fitbit_data = get_existing_fitbit(fitbit_member.user.access_token)
 
     # Set up user realm since rate limiting is per-user
     print(fitbit_member.user)
@@ -158,90 +162,85 @@ def fetch_fitbit_data(fitbit_member_id, access_token, fitbit_data=None):
         'weight': query_result['user']['weight'],
     }
 
-    # Some block about if the period is none
-    for url in [u for u in fitbit_urls if u['period'] is None]:
-        if not user_id and 'profile' in fitbit_data:
-            user_id = fitbit_data['profile']['user']['encodedId']
+    try: 
+        # Some block about if the period is none
+        for url in [u for u in fitbit_urls if u['period'] is None]:
+            if not user_id and 'profile' in fitbit_data:
+                user_id = fitbit_data['profile']['user']['encodedId']
 
-        # Build URL
-        fitbit_api_base_url = 'https://api.fitbit.com/1/user'
-        final_url = fitbit_api_base_url + url['url'].format(user_id=user_id)
-        # Fetch the data
-        try:
+            # Build URL
+            fitbit_api_base_url = 'https://api.fitbit.com/1/user'
+            final_url = fitbit_api_base_url + url['url'].format(user_id=user_id)
+            # Fetch the data
             print(final_url)
             r = rr.get(url=final_url, 
                     headers=headers, 
                     realms=["Fitbit", 'fitbit-{}'.format(fitbit_member.user.oh_id)])
             print(r.text)
-        except RequestsRespectfulRateLimitedError:
-            logging.info('Requests-respectful reports rate limit hit.')
-            raise RateLimitException()
 
-        fitbit_data[url['name']] = r
+            fitbit_data[url['name']] = r.json()
 
-    #Period year URLs
-    for url in [u for u in fitbit_urls if u['period'] == 'year']:
-        years = arrow.Arrow.range('year', start_date.floor('year'),
-                                arrow.get())
-        for year_date in years:
-            year = year_date.format('YYYY')
+        #Period year URLs
+        for url in [u for u in fitbit_urls if u['period'] == 'year']:
+            years = arrow.Arrow.range('year', start_date.floor('year'),
+                                    arrow.get())
+            for year_date in years:
+                year = year_date.format('YYYY')
 
-            if year in fitbit_data[url['name']]:
-                logger.info('Skip retrieval {}: {}'.format(url['name'], year))
-                continue
+                if year in fitbit_data[url['name']]:
+                    logger.info('Skip retrieval {}: {}'.format(url['name'], year))
+                    continue
 
-            logger.info('Retrieving %s: %s', url['name'], year)
-            # Build URL
-            fitbit_api_base_url = 'https://api.fitbit.com/1/user'
-            final_url = fitbit_api_base_url + url['url'].format(user_id=user_id,
-                                                                start_date=year_date.floor('year').format('YYYY-MM-DD'),
-                                                                end_date=year_date.ceil('year').format('YYYY-MM-DD'))
-            # Fetch the data
-            try:
+                logger.info('Retrieving %s: %s', url['name'], year)
+                # Build URL
+                fitbit_api_base_url = 'https://api.fitbit.com/1/user'
+                final_url = fitbit_api_base_url + url['url'].format(user_id=user_id,
+                                                                    start_date=year_date.floor('year').format('YYYY-MM-DD'),
+                                                                    end_date=year_date.ceil('year').format('YYYY-MM-DD'))
+                # Fetch the data
                 print(final_url)
                 r = rr.get(url=final_url, 
                         headers=headers, 
                         realms=["Fitbit", 'fitbit-{}'.format(fitbit_member.user.oh_id)])
-            except RequestsRespectfulRateLimitedError:
-                logging.info('Requests-respectful reports rate limit hit.')
-                raise RateLimitException()
 
-            fitbit_data[url['name']][str(year)] = r
+                fitbit_data[url['name']][str(year)] = r.json()
 
-    # Month period URLs/fetching
-    for url in [u for u in fitbit_urls if u['period'] == 'month']:
-        months = arrow.Arrow.range('month', start_date.floor('month'),
-                                arrow.get())
-        for month_date in months:
-            month = month_date.format('YYYY-MM')
+        # Month period URLs/fetching
+        for url in [u for u in fitbit_urls if u['period'] == 'month']:
+            months = arrow.Arrow.range('month', start_date.floor('month'),
+                                    arrow.get())
+            for month_date in months:
+                month = month_date.format('YYYY-MM')
 
-            if month in fitbit_data[url['name']]:
-                logger.info('Skip retrieval {}: {}'.format(url['name'], month))
-                continue
+                if month in fitbit_data[url['name']]:
+                    logger.info('Skip retrieval {}: {}'.format(url['name'], month))
+                    continue
 
-            logger.info('Retrieving %s: %s', url['name'], month)
-            # Build URL
-            fitbit_api_base_url = 'https://api.fitbit.com/1/user'
-            final_url = fitbit_api_base_url + url['url'].format(user_id=user_id,
-                                                                start_date=month_date.floor('month').format('YYYY-MM-DD'),
-                                                                end_date=month_date.ceil('month').format('YYYY-MM-DD'))
-            # Fetch the data
-            try:
+                logger.info('Retrieving %s: %s', url['name'], month)
+                # Build URL
+                fitbit_api_base_url = 'https://api.fitbit.com/1/user'
+                final_url = fitbit_api_base_url + url['url'].format(user_id=user_id,
+                                                                    start_date=month_date.floor('month').format('YYYY-MM-DD'),
+                                                                    end_date=month_date.ceil('month').format('YYYY-MM-DD'))
+                # Fetch the data
                 print(final_url)
                 r = rr.get(url=final_url, 
                         headers=headers, 
                         realms=["Fitbit", 'fitbit-{}'.format(fitbit_member.user.oh_id)])
-            except RequestsRespectfulRateLimitedError:
-                logging.info('Requests-respectful reports rate limit hit.')
-                print('Requests-respectful reports rate limit hit.')
-                print(r.text)
-                raise RateLimitException()
 
-            fitbit_data[url['name']][month] = r
+                fitbit_data[url['name']][month] = r.json()
 
-    print(fitbit_data)
-    replace_fitbit(fitbit_member.user, fitbit_data)
-    return fitbit_data
+    except RequestsRespectfulRateLimitedError:
+        logging.info('Requests-respectful reports rate limit hit.')
+        print("hit requests respectful rate limit, going to requeue")
+        fetch_fitbit_data.apply_async(args=[fitbit_member_id, fitbit_member.user.access_token], countdown=61)
+        # raise RateLimitException()
+    finally:
+        print("calling finally")
+        print(fitbit_data)
+        replace_fitbit(fitbit_member.user, fitbit_data)
+
+    # return fitbit_data
 
 
 def get_existing_fitbit(oh_access_token):
@@ -263,7 +262,7 @@ def replace_fitbit(oh_member, fitbit_data):
     tmp_directory = tempfile.mkdtemp()
     metadata = {
         'description':
-        'FItbit data.',
+        'Fitbit data.',
         'tags': ['Fitbit', 'activity', 'steps'],
         'updated_at': str(datetime.utcnow()),
         }
@@ -274,10 +273,15 @@ def replace_fitbit(oh_member, fitbit_data):
                     file_basename="fitbit-data.json")
     print("delete response")
     print(deleter)
+    print("trying to write to file")
     with open(out_file, 'w') as json_file:
-        json.dump(fitbit_data, json_file)
-        print(json.dump(fitbit_data, json_file))
+        print("inside open file")
+        # json.dump(fitbit_data, json_file)
+        json_file.write(json.dumps(fitbit_data))
+        # print(json.dump(fitbit_data, json_file))
+        print("dumped, trying to flush")
         json_file.flush()
+    print("attempting add response")
     addr = api.upload_aws(out_file, metadata,
                    oh_member.access_token,
                    project_member_id=oh_member.oh_id)

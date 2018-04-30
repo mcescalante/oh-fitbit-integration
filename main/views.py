@@ -8,13 +8,10 @@ import arrow
 from django.contrib.auth import login
 from django.shortcuts import render, redirect
 from django.conf import settings
-from datauploader.tasks import (xfer_to_open_humans,
-                                fetch_fitbit_data,
-                                get_existing_fitbit)
+from datauploader.tasks import fetch_fitbit_data
 from urllib.parse import parse_qs
 from open_humans.models import OpenHumansMember
 from .models import FitbitMember
-from ohapi import api
 
 
 # Set up logging.
@@ -78,11 +75,14 @@ def complete_fitbit(request):
 
     # Fetch user's existing data from OH
     # We are going to use the pip package open-humans-api for this  
-    fitbit_data = get_existing_fitbit(oh_user.access_token)
+    # fitbit_data = get_existing_fitbit(oh_user.access_token)
     # print(fitbit_data)
 
+
     # Fetch user's data from Fitbit (update the data if it already existed)
-    alldata = fetch_fitbit_data.delay(fitbit_member.id, rjson['access_token'], fitbit_data)
+    alldata = fetch_fitbit_data.delay(fitbit_member.id, rjson['access_token'])
+
+    # replace_fitbit(fitbit_member.user, fitbit_data)
 
     # metadata = {
     #     'tags': ['fitbit', 'tracker', 'activity'],
@@ -94,6 +94,7 @@ def complete_fitbit(request):
     context = {'oh_proj_page': settings.OH_ACTIVITY_PAGE}
     return render(request, 'main/complete.html',
                   context=context)
+
 
 def complete(request):
     """
