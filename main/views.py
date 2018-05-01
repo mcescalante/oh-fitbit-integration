@@ -81,7 +81,7 @@ def complete_fitbit(request):
 
     # Fetch user's data from Fitbit (update the data if it already existed)
     print(fitbit_member)
-    alldata = fetch_fitbit_data.delay(fitbit_member.id, rjson['access_token'])
+    alldata = fetch_fitbit_data(fitbit_member.id, rjson['access_token'])
 
     # replace_fitbit(fitbit_member.user, fitbit_data)
 
