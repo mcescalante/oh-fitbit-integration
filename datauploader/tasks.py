@@ -129,6 +129,7 @@ def fetch_fitbit_data(fitbit_member_id, access_token, fitbit_data=None):
     rr.update_realm(user_realm, max_requests=150, timespan=3600)
 
     # Get initial information about user from Fitbit
+    print("Creating header and going to get user profile")
     headers = {'Authorization': "Bearer %s" % fitbit_member.access_token}
     query_result = requests.get('https://api.fitbit.com/1/user/-/profile.json', headers=headers).json()
 
@@ -143,6 +144,7 @@ def fetch_fitbit_data(fitbit_member_id, access_token, fitbit_data=None):
     #     fitbit_member._refresh_tokens()
 
     # Reset data if user account ID has changed.
+    print("reset data if user account ID changed")
     if 'profile' in fitbit_data:
         if fitbit_data['profile']['encodedId'] != user_id:
             logging.info(
@@ -162,8 +164,10 @@ def fetch_fitbit_data(fitbit_member_id, access_token, fitbit_data=None):
         'weight': query_result['user']['weight'],
     }
 
+    print("entering try block")
     try: 
         # Some block about if the period is none
+        print("period none")
         for url in [u for u in fitbit_urls if u['period'] is None]:
             if not user_id and 'profile' in fitbit_data:
                 user_id = fitbit_data['profile']['user']['encodedId']
@@ -181,6 +185,7 @@ def fetch_fitbit_data(fitbit_member_id, access_token, fitbit_data=None):
             fitbit_data[url['name']] = r.json()
 
         #Period year URLs
+        print("period year")
         for url in [u for u in fitbit_urls if u['period'] == 'year']:
             years = arrow.Arrow.range('year', start_date.floor('year'),
                                     arrow.get())
@@ -206,6 +211,7 @@ def fetch_fitbit_data(fitbit_member_id, access_token, fitbit_data=None):
                 fitbit_data[url['name']][str(year)] = r.json()
 
         # Month period URLs/fetching
+        print("period month")
         for url in [u for u in fitbit_urls if u['period'] == 'month']:
             months = arrow.Arrow.range('month', start_date.floor('month'),
                                     arrow.get())
