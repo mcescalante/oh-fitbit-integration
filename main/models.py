@@ -13,11 +13,11 @@ class FitbitMember(models.Model):
     """
     user = models.OneToOneField(OpenHumansMember, related_name="fitbit_member", on_delete=models.CASCADE)
     userid = models.CharField(max_length=255, unique=True, null=True)
-    access_token = models.CharField(max_length=255)
-    refresh_token = models.CharField(max_length=255)
-    expires_in = models.CharField(max_length=255)
-    scope = models.CharField(max_length=500)
-    token_type = models.CharField(max_length=255)
+    access_token = models.CharField(max_length=512)
+    refresh_token = models.CharField(max_length=512)
+    expires_in = models.CharField(max_length=512)
+    scope = models.CharField(max_length=512)
+    token_type = models.CharField(max_length=512)
 
     @staticmethod
     def get_expiration(expires_in):
