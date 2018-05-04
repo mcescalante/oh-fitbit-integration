@@ -12,6 +12,7 @@ from datauploader.tasks import fetch_fitbit_data
 from urllib.parse import parse_qs
 from open_humans.models import OpenHumansMember
 from .models import FitbitMember
+from .helpers import get_fitbit_file
 
 
 # Set up logging.
@@ -26,11 +27,40 @@ def index(request):
     """
     Starting page for app.
     """
+    if request.user.is_authenticated:
+        return redirect('/dashboard')
 
     context = {'client_id': settings.OPENHUMANS_CLIENT_ID,
                'oh_proj_page': settings.OH_ACTIVITY_PAGE}
 
     return render(request, 'main/index.html', context=context)
+
+
+def dashboard(request):
+    if request.user.is_authenticated:
+        if hasattr(request.user.oh_member, 'datasourcemember'):
+            fitbit_member = request.user.oh_member.fitbit_member
+            download_file = get_fitbit_file(request.user.oh_member)
+            if download_file == 'error':
+                logout(request)
+                return redirect("/")
+            connect_url = ''
+            # allow_update = check_update(moves_member)
+        else:
+            allow_update = False
+            moves_member = ''
+            download_file = ''
+            auth_url = 'https://www.fitbit.com/oauth2/authorize?response_type=code&client_id='+settings.FITBIT_CLIENT_ID+'&scope=activity%20nutrition%20heartrate%20location%20nutrition%20profile%20settings%20sleep%20social%20weight'
+        context = {
+            'oh_member': request.user.oh_member,
+            'moves_member': moves_member,
+            'download_file': download_file,
+            'connect_url': auth_url,
+            'allow_update': allow_update
+        }
+        return render(request, 'main/dashboard.html',
+                      context=context)
+    return redirect("/")
 
 
 def complete_fitbit(request):
