@@ -1,5 +1,7 @@
 from ohapi import api
 from django.conf import settings
+import arrow
+from datetime import timedelta
 
 def get_fitbit_file(oh_member):
     try:
@@ -14,3 +16,9 @@ def get_fitbit_file(oh_member):
 
     except:
         return 'error'
+
+
+def check_update(fitbit_member):
+    if fitbit_member.last_submitted < (arrow.now() - timedelta(hours=1)):
+        return True
+    return False

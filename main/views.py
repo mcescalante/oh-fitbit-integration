@@ -12,7 +12,7 @@ from datauploader.tasks import fetch_fitbit_data
 from urllib.parse import parse_qs
 from open_humans.models import OpenHumansMember
 from .models import FitbitMember
-from .helpers import get_fitbit_file
+from .helpers import get_fitbit_file, check_update
 
 
 # Set up logging.
@@ -47,12 +47,11 @@ def dashboard(request):
                 logout(request)
                 return redirect("/")
             auth_url = ''
-            allow_update = ''
-            # allow_update = check_update(moves_member)
+            allow_update = check_update(fitbit_member)
         else:
             print("else triggered")
             allow_update = False
-            moves_member = ''
+            fitbit_member = ''
             download_file = ''
             auth_url = 'https://www.fitbit.com/oauth2/authorize?response_type=code&client_id='+settings.FITBIT_CLIENT_ID+'&scope=activity%20nutrition%20heartrate%20location%20nutrition%20profile%20settings%20sleep%20social%20weight'
         
@@ -150,6 +149,21 @@ def remove_fitbit(request):
             logout(request)
             return redirect('/')
     return redirect('/dashboard')
+
+
+def update_data(request):
+    if request.method == "POST" and request.user.is_authenticated:
+        oh_member = request.user.oh_member
+        fetch_fitbit_data.delay(oh_member.oh_id, oh_member.fitbit_member.access_token)
+        fitbit_member = oh_member.fitbit_member
+        fitbit_member.last_submitted = arrow.now().format()
+        fitbit_member.save()
+        messages.info(request,
+                      ("An update of your Fitbit data has been started! "
+                       "It can take some minutes before the first data is "
+                       "available. Reload this page in a while to find your "
+                       "data"))
+        return redirect('/dashboard')
 
 
 def complete(request):
