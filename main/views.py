@@ -38,22 +38,27 @@ def index(request):
 
 def dashboard(request):
     if request.user.is_authenticated:
-        if hasattr(request.user.oh_member, 'datasourcemember'):
+        print(hasattr(request.user.oh_member, 'fitbit_member'))
+        if hasattr(request.user.oh_member, 'fitbit_member'):
+            print("OK!")
             fitbit_member = request.user.oh_member.fitbit_member
             download_file = get_fitbit_file(request.user.oh_member)
             if download_file == 'error':
                 logout(request)
                 return redirect("/")
-            connect_url = ''
+            auth_url = ''
+            allow_update = ''
             # allow_update = check_update(moves_member)
         else:
+            print("else triggered")
             allow_update = False
             moves_member = ''
             download_file = ''
             auth_url = 'https://www.fitbit.com/oauth2/authorize?response_type=code&client_id='+settings.FITBIT_CLIENT_ID+'&scope=activity%20nutrition%20heartrate%20location%20nutrition%20profile%20settings%20sleep%20social%20weight'
+        
         context = {
             'oh_member': request.user.oh_member,
-            'moves_member': moves_member,
+            'fitbit_member': fitbit_member,
             'download_file': download_file,
             'connect_url': auth_url,
             'allow_update': allow_update
@@ -127,6 +132,26 @@ def complete_fitbit(request):
                   context=context)
 
 
+def remove_fitbit(request):
+    if request.method == "POST" and request.user.is_authenticated:
+        try:
+            oh_member = request.user.oh_member
+            api.delete_file(oh_member.access_token,
+                            oh_member.oh_id,
+                            file_basename="fitbit-data.json")
+            messages.info(request, "Your Fitbit account has been removed")
+            fitbit_account = request.user.oh_member.fitbit_member
+            fitbit_account.delete()
+        except:
+            fitbit_account = request.user.oh_member.fitbit_member
+            fitbit_account.delete()
+            messages.info(request, ("Something went wrong, please"
+                          "re-authorize us on Open Humans"))
+            logout(request)
+            return redirect('/')
+    return redirect('/dashboard')
+
+
 def complete(request):
     """
     Receive user from Open Humans. Store data, start upload.
@@ -143,13 +168,16 @@ def complete(request):
         login(request, user,
               backend='django.contrib.auth.backends.ModelBackend')
 
-        auth_url = 'https://www.fitbit.com/oauth2/authorize?response_type=code&client_id='+settings.FITBIT_CLIENT_ID+'&scope=activity%20nutrition%20heartrate%20location%20nutrition%20profile%20settings%20sleep%20social%20weight'
-
         context = {'oh_id': oh_member.oh_id,
-                   'oh_proj_page': settings.OH_ACTIVITY_PAGE,
-                   'authorization_url': auth_url}
-        return render(request, 'main/fitbit.html',
-                      context=context)
+                   'oh_proj_page': settings.OH_ACTIVITY_PAGE}
+
+        if not hasattr(oh_member, 'fitbitmember'):
+            auth_url = 'https://www.fitbit.com/oauth2/authorize?response_type=code&client_id='+settings.FITBIT_CLIENT_ID+'&scope=activity%20nutrition%20heartrate%20location%20nutrition%20profile%20settings%20sleep%20social%20weight'
+            context['auth_url'] = auth_url
+            return render(request, 'main/fitbit.html',
+                        context=context)
+        
+        return redirect("/dashboard")
 
     logger.debug('Invalid code exchange. User returned to starting page.')
     return redirect('/')

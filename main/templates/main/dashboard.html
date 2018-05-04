@@ -7,16 +7,16 @@
     <p class="lead">
       You can perform basic management tasks from this page.
     </p>
-    {% if moves_member%}
+    {% if fitbit_member %}
     <div class="row">
       <div class="col-md-6">
         <p>
         A <i>Fitbit</i> account is connected to your <i>Open Humans</i>
         right now. You can trigger an
-        update your <i>Moves</i> data (automatic data updates are done every few days,
+        update your <i>Fitbit</i> data (automatic data updates are done every few days,
         but you might want to have your latest data right now).
         </p>
-        {% if allow_update%}
+        {% if allow_update %}
         <form action="{% url 'update_data' %}" method="post">
           {% csrf_token %}
           <input type="submit"
@@ -37,7 +37,7 @@
         <br/>
         <p>You want do remove your current Fitbit account and maybe replace with
           with a different one? Click below to remove your current Fitbit account</p>
-        <form action="{% url 'remove_moves' %}" method="post">
+        <form action="{% url 'remove_fitbit' %}" method="post">
           {% csrf_token %}
           <input type="submit"
             value="Disconnect Moves"
@@ -71,7 +71,7 @@
     </div>
       {% else %}
       <p class="lead">
-        You haven't connected to <i>Fitbit</i> yet. click below to get started.
+        You haven't connected to <i>Fitbit</i> yet or there was a problem fetching your data. click below to get started.
       </p>
       <a
         class="btn btn-primary btn-lg"
