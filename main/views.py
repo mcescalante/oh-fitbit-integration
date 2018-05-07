@@ -106,12 +106,19 @@ def complete_fitbit(request):
             token_type=rjson['token_type'])
 
     # Fetch user's data from Fitbit (update the data if it already existed)
-    print(fitbit_member)
-    alldata = fetch_fitbit_data.delay(fitbit_member.id, rjson['access_token'])
+    # print(fitbit_member)
+    # alldata = fetch_fitbit_data.delay(fitbit_member.id, rjson['access_token'])
 
     context = {'oh_proj_page': settings.OH_ACTIVITY_PAGE}
-    return render(request, 'main/complete.html',
-                  context=context)
+
+    if fitbit_member:
+        messages.info(request, "Your Fitbit account has been connected, and your data has been queued to be fetched from Fitbit")
+        return redirect('/dashboard')
+
+    logger.debug('Invalid code exchange. User returned to starting page.')
+    messages.info(request, ("Something went wrong, please try connecting your "
+                            "Fitbit account again"))
+    return redirect('/dashboard')
 
 
 def remove_fitbit(request):

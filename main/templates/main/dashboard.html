@@ -17,13 +17,7 @@
         but you might want to have your latest data right now).
         </p>
         {% if allow_update %}
-        <form action="{% url 'update_data' %}" method="post">
-          {% csrf_token %}
-          <input type="submit"
-            value="Update Data"
-            style="margin-top:6px;"
-            class="btn btn-primary">
-        </form>
+          <strong>Data updating temporarily unavailable, please check back later</strong><br>
         {%else%}
         <a
           class="btn btn-default disabled"
