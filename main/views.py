@@ -5,13 +5,15 @@ import base64
 import json
 import arrow
 
-from django.contrib.auth import login
+from django.contrib import messages
+from django.contrib.auth import login, logout
 from django.shortcuts import render, redirect
 from django.conf import settings
 from datauploader.tasks import fetch_fitbit_data
 from urllib.parse import parse_qs
 from open_humans.models import OpenHumansMember
 from .models import FitbitMember
+from .helpers import get_fitbit_file, check_update
 
 
 # Set up logging.
@@ -26,11 +28,41 @@ def index(request):
     """
     Starting page for app.
     """
+    if request.user.is_authenticated:
+        return redirect('/dashboard')
 
     context = {'client_id': settings.OPENHUMANS_CLIENT_ID,
                'oh_proj_page': settings.OH_ACTIVITY_PAGE}
 
     return render(request, 'main/index.html', context=context)
+
+
+def dashboard(request):
+    if request.user.is_authenticated:
+        if hasattr(request.user.oh_member, 'fitbit_member'):
+            fitbit_member = request.user.oh_member.fitbit_member
+            download_file = get_fitbit_file(request.user.oh_member)
+            if download_file == 'error':
+                logout(request)
+                return redirect("/")
+            auth_url = ''
+            allow_update = True
+        else:
+            allow_update = False
+            fitbit_member = ''
+            download_file = ''
+            auth_url = 'https://www.fitbit.com/oauth2/authorize?response_type=code&client_id='+settings.FITBIT_CLIENT_ID+'&scope=activity%20nutrition%20heartrate%20location%20nutrition%20profile%20settings%20sleep%20social%20weight'
+        
+        context = {
+            'oh_member': request.user.oh_member,
+            'fitbit_member': fitbit_member,
+            'download_file': download_file,
+            'connect_url': auth_url,
+            'allow_update': allow_update
+        }
+        return render(request, 'main/dashboard.html',
+                      context=context)
+    return redirect("/")
 
 
 def complete_fitbit(request):
@@ -73,28 +105,56 @@ def complete_fitbit(request):
             scope=rjson['scope'],
             token_type=rjson['token_type'])
 
-    # Fetch user's existing data from OH
-    # We are going to use the pip package open-humans-api for this  
-    # fitbit_data = get_existing_fitbit(oh_user.access_token)
-    # print(fitbit_data)
-
-
     # Fetch user's data from Fitbit (update the data if it already existed)
-    print(fitbit_member)
-    alldata = fetch_fitbit_data.delay(fitbit_member.id, rjson['access_token'])
-
-    # replace_fitbit(fitbit_member.user, fitbit_data)
-
-    # metadata = {
-    #     'tags': ['fitbit', 'tracker', 'activity'],
-    #     'description': 'File with Fitbit data',
-    # }
-
-    # xfer_to_open_humans.delay(alldata, metadata, oh_id=oh_id)
+    # print(fitbit_member)
+    # alldata = fetch_fitbit_data.delay(fitbit_member.id, rjson['access_token'])
 
     context = {'oh_proj_page': settings.OH_ACTIVITY_PAGE}
-    return render(request, 'main/complete.html',
-                  context=context)
+
+    if fitbit_member:
+        messages.info(request, "Your Fitbit account has been connected, and your data has been queued to be fetched from Fitbit")
+        return redirect('/dashboard')
+
+    logger.debug('Invalid code exchange. User returned to starting page.')
+    messages.info(request, ("Something went wrong, please try connecting your "
+                            "Fitbit account again"))
+    return redirect('/dashboard')
+
+
+def remove_fitbit(request):
+    if request.method == "POST" and request.user.is_authenticated:
+        try:
+            oh_member = request.user.oh_member
+            api.delete_file(oh_member.access_token,
+                            oh_member.oh_id,
+                            file_basename="fitbit-data.json")
+            messages.info(request, "Your Fitbit account has been removed")
+            fitbit_account = request.user.oh_member.fitbit_member
+            fitbit_account.delete()
+        except:
+            fitbit_account = request.user.oh_member.fitbit_member
+            fitbit_account.delete()
+            messages.info(request, ("Something went wrong, please"
+                          "re-authorize us on Open Humans"))
+            logout(request)
+            return redirect('/')
+    return redirect('/dashboard')
+
+
+def update_data(request):
+    if request.method == "POST" and request.user.is_authenticated:
+        print("entered update_data POST thing")
+        oh_member = request.user.oh_member
+        fetch_fitbit_data(oh_member.fitbit_member.id, oh_member.fitbit_member.access_token)
+        fitbit_member = oh_member.fitbit_member
+        fitbit_member.last_submitted = arrow.now().format()
+        fitbit_member.save()
+        messages.info(request,
+                      ("An update of your Fitbit data has been started! "
+                       "It can take some minutes before the first data is "
+                       "available. Reload this page in a while to find your "
+                       "data"))
+        return redirect('/dashboard')
 
 
 def complete(request):
@@ -113,13 +173,16 @@ def complete(request):
         login(request, user,
               backend='django.contrib.auth.backends.ModelBackend')
 
-        auth_url = 'https://www.fitbit.com/oauth2/authorize?response_type=code&client_id='+settings.FITBIT_CLIENT_ID+'&scope=activity%20nutrition%20heartrate%20location%20nutrition%20profile%20settings%20sleep%20social%20weight'
-
         context = {'oh_id': oh_member.oh_id,
-                   'oh_proj_page': settings.OH_ACTIVITY_PAGE,
-                   'authorization_url': auth_url}
-        return render(request, 'main/fitbit.html',
-                      context=context)
+                   'oh_proj_page': settings.OH_ACTIVITY_PAGE}
+
+        if not hasattr(oh_member, 'fitbitmember'):
+            auth_url = 'https://www.fitbit.com/oauth2/authorize?response_type=code&client_id='+settings.FITBIT_CLIENT_ID+'&scope=activity%20nutrition%20heartrate%20location%20nutrition%20profile%20settings%20sleep%20social%20weight'
+            context['auth_url'] = auth_url
+            return render(request, 'main/fitbit.html',
+                        context=context)
+        
+        return redirect("/dashboard")
 
     logger.debug('Invalid code exchange. User returned to starting page.')
     return redirect('/')

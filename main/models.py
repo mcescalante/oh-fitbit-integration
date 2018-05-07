@@ -18,6 +18,10 @@ class FitbitMember(models.Model):
     expires_in = models.CharField(max_length=512)
     scope = models.CharField(max_length=512)
     token_type = models.CharField(max_length=512)
+    last_updated = models.DateTimeField(
+                            default=(arrow.now() - timedelta(days=7)).format())
+    last_submitted = models.DateTimeField(
+                            default=(arrow.now() - timedelta(days=7)).format())
 
     @staticmethod
     def get_expiration(expires_in):
@@ -41,4 +45,6 @@ class FitbitMember(models.Model):
             self.access_token = data['access_token']
             self.refresh_token = data['refresh_token']
             self.token_expires = self.get_expiration(data['expires_in'])
+            self.scope =  data['scope']
+            self.userid = data['user_id']
             self.save()

@@ -8,4 +8,12 @@ class Command(BaseCommand):
     help = 'Update data for all users'
 
     def handle(self, *args, **options):
-      pass
+        # OH token refresh (for all users)
+        # oh_users = OpenHumansMember.objects.all()
+        # for user in users:
+        #     user._refresh_tokens(OPENHUMANS_CLIENT_ID, OPENHUMANS_CLIENT_SECRET)
+
+        # Fitbit token refresh (for all users)
+        fitbit_users = FitbitMember.objects.all()
+        for user in fitbit_users:
+            user._refresh_tokens()
