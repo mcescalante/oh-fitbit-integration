@@ -2,7 +2,8 @@ from django.core.management.base import BaseCommand
 from main.models import FitbitMember
 from open_humans.models import OpenHumansMember
 from datauploader.tasks import fetch_fitbit_data
-from fitbit.settings import OPENHUMANS_CLIENT_ID, OPENHUMANS_CLIENT_SECRET
+# from fitbit.settings import OPENHUMANS_CLIENT_ID, OPENHUMANS_CLIENT_SECRET
+from django.conf import settings
 
 class Command(BaseCommand):
     help = 'Import existing users from legacy project. Refresh (and save) OH/Fitbit tokens for all members'
@@ -30,12 +31,14 @@ class Command(BaseCommand):
                 oh_member._refresh_tokens(client_id=settings.OPENHUMANS_CLIENT_ID,
                                             client_secret=settings.OPENHUMANS_CLIENT_SECRET)
                 oh_member = OpenHumansMember.objects.get(oh_id=oh_id)
+                print("made it to fitbitmember")
                 fitbit_member = FitbitMember(
                     access_token="mock",
                     refresh_token=moves_refresh_token,
-                    token_expires=FitbitMember.get_expiration(
+                    expires_in=FitbitMember.get_expiration(
                         -3600)
                 )
+                print(fitbit_member)
                 fitbit_member.user = oh_member
                 fitbit_member._refresh_tokens()
                 fetch_fitbit_data.delay(oh_member.oh_id, oh_member.fitbit_member.access_token)
