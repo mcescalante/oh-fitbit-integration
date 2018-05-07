@@ -41,4 +41,4 @@ class Command(BaseCommand):
                 print(fitbit_member)
                 fitbit_member.user = oh_member
                 fitbit_member._refresh_tokens()
-                fetch_fitbit_data.delay(oh_member.oh_id, oh_member.fitbit_member.access_token)
+                # fetch_fitbit_data.delay(oh_member.oh_id, oh_member.fitbit_member.access_token)
