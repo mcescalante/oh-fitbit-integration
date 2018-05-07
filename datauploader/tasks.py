@@ -121,7 +121,7 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
     fitbit_member = FitbitMember.objects.get(id=fitbit_member_id)
 
     # Get existing data as currently stored on OH
-    # fitbit_data = get_existing_fitbit(fitbit_member.user.access_token)
+    fitbit_data = get_existing_fitbit(fitbit_member.user.access_token)
 
     # Set up user realm since rate limiting is per-user
     print(fitbit_member.user)
@@ -141,7 +141,7 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
 
     print(query_result)
 
-    fitbit_data = {}
+    # fitbit_data = {}
     print(fitbit_data)
 
     # Refresh token if the result is 401
@@ -151,7 +151,6 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
 
     if not fitbit_data:
         print("empty data")
-        print(fitbit_data)
         # fitbit_data = {}
         # return
 
@@ -199,20 +198,23 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
 
         #Period year URLs
         print("period year")
-        print(fitbit_data)
+        # print(fitbit_data)
         for url in [u for u in fitbit_urls if u['period'] == 'year']:
-            print("LOOPED OVER A URL" + str(url))
+            # print("LOOPED OVER A URL" + str(url))
             years = arrow.Arrow.range('year', start_date.floor('year'),
                                     arrow.get())
-            print(years)
+            # print(years)
             for year_date in years:
-                print(year_date)
+                # print(year_date)
                 year = year_date.format('YYYY')
 
-                if year in fitbit_data[url['name']]:
-                    print("ENTERED SOME WEIRD CONTINUE BLOCK IN PERIOD YEAR")
-                    logger.info('Skip retrieval {}: {}'.format(url['name'], year))
-                    continue
+                try:
+                    if year in fitbit_data[url['name']]:
+                        logger.info('Skip retrieval {}: {}'.format(url['name'], year))
+                        continue
+                except KeyError:
+                    #something related to incomplete data
+                    pass
 
                 logger.info('Retrieving %s: %s', url['name'], year)
                 # Build URL
@@ -226,9 +228,13 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
                         headers=headers, 
                         realms=["Fitbit", 'fitbit-{}'.format(fitbit_member.user.oh_id)])
 
+                # print([url['name']]['blah'])
+                # print([str(year)])
+                fitbit_data[url['name']] = {}
                 fitbit_data[url['name']][str(year)] = r.json()
 
         # Month period URLs/fetching
+        print(fitbit_data)
         print("period month")
         for url in [u for u in fitbit_urls if u['period'] == 'month']:
             months = arrow.Arrow.range('month', start_date.floor('month'),
@@ -236,9 +242,13 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
             for month_date in months:
                 month = month_date.format('YYYY-MM')
 
-                if month in fitbit_data[url['name']]:
-                    logger.info('Skip retrieval {}: {}'.format(url['name'], month))
-                    continue
+                try:
+                    if month in fitbit_data[url['name']]:
+                        logger.info('Skip retrieval {}: {}'.format(url['name'], month))
+                        continue
+                except KeyError:
+                    #some weird empty data error
+                    pass
 
                 logger.info('Retrieving %s: %s', url['name'], month)
                 # Build URL
@@ -247,24 +257,23 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
                                                                     start_date=month_date.floor('month').format('YYYY-MM-DD'),
                                                                     end_date=month_date.ceil('month').format('YYYY-MM-DD'))
                 # Fetch the data
-                print(final_url)
+                print(finacl_url)
                 r = rr.get(url=final_url, 
                         headers=headers, 
                         realms=["Fitbit", 'fitbit-{}'.format(fitbit_member.user.oh_id)])
 
+                fitbit_data[url['name']] = {}
                 fitbit_data[url['name']][month] = r.json()
 
-    # except Exception as e:
-    #     print(e)
     except RequestsRespectfulRateLimitedError:
         logging.info('Requests-respectful reports rate limit hit.')
         print("hit requests respectful rate limit, going to requeue")
         fetch_fitbit_data.apply_async(args=[fitbit_member_id, fitbit_member.user.access_token], countdown=61)
         # raise RateLimitException()
-    # finally:
-    #     print("calling finally")
-    #     print(fitbit_data)
-    #     replace_fitbit(fitbit_member.user, fitbit_data)
+    finally:
+        print("calling finally")
+        print(fitbit_data)
+        replace_fitbit(fitbit_member.user, fitbit_data)
 
     # return fitbit_data
 
