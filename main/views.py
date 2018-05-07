@@ -5,7 +5,8 @@ import base64
 import json
 import arrow
 
-from django.contrib.auth import login
+from django.contrib import messages
+from django.contrib.auth import login, logout
 from django.shortcuts import render, redirect
 from django.conf import settings
 from datauploader.tasks import fetch_fitbit_data
@@ -38,18 +39,15 @@ def index(request):
 
 def dashboard(request):
     if request.user.is_authenticated:
-        print(hasattr(request.user.oh_member, 'fitbit_member'))
         if hasattr(request.user.oh_member, 'fitbit_member'):
-            print("OK!")
             fitbit_member = request.user.oh_member.fitbit_member
             download_file = get_fitbit_file(request.user.oh_member)
             if download_file == 'error':
                 logout(request)
                 return redirect("/")
             auth_url = ''
-            allow_update = check_update(fitbit_member)
+            allow_update = True
         else:
-            print("else triggered")
             allow_update = False
             fitbit_member = ''
             download_file = ''
@@ -107,24 +105,9 @@ def complete_fitbit(request):
             scope=rjson['scope'],
             token_type=rjson['token_type'])
 
-    # Fetch user's existing data from OH
-    # We are going to use the pip package open-humans-api for this  
-    # fitbit_data = get_existing_fitbit(oh_user.access_token)
-    # print(fitbit_data)
-
-
     # Fetch user's data from Fitbit (update the data if it already existed)
     print(fitbit_member)
     alldata = fetch_fitbit_data.delay(fitbit_member.id, rjson['access_token'])
-
-    # replace_fitbit(fitbit_member.user, fitbit_data)
-
-    # metadata = {
-    #     'tags': ['fitbit', 'tracker', 'activity'],
-    #     'description': 'File with Fitbit data',
-    # }
-
-    # xfer_to_open_humans.delay(alldata, metadata, oh_id=oh_id)
 
     context = {'oh_proj_page': settings.OH_ACTIVITY_PAGE}
     return render(request, 'main/complete.html',
@@ -153,8 +136,9 @@ def remove_fitbit(request):
 
 def update_data(request):
     if request.method == "POST" and request.user.is_authenticated:
+        print("entered update_data POST thing")
         oh_member = request.user.oh_member
-        fetch_fitbit_data.delay(oh_member.oh_id, oh_member.fitbit_member.access_token)
+        fetch_fitbit_data(oh_member.fitbit_member.id, oh_member.fitbit_member.access_token)
         fitbit_member = oh_member.fitbit_member
         fitbit_member.last_submitted = arrow.now().format()
         fitbit_member.save()

@@ -37,7 +37,7 @@ class RateLimitException(Exception):
     pass
 
 @shared_task
-def fetch_fitbit_data(fitbit_member_id, access_token, fitbit_data=None):
+def fetch_fitbit_data(fitbit_member_id, access_token):
     '''
     Fetches all of the fitbit data for a given user
     '''
@@ -115,12 +115,13 @@ def fetch_fitbit_data(fitbit_member_id, access_token, fitbit_data=None):
          'url': '/{user_id}/sleep/timeInBed/date/{start_date}/{end_date}.json',
          'period': 'year'},
     ]
+    print("entered function")
 
     # Get Fitbit member object
     fitbit_member = FitbitMember.objects.get(id=fitbit_member_id)
 
     # Get existing data as currently stored on OH
-    fitbit_data = get_existing_fitbit(fitbit_member.user.access_token)
+    # fitbit_data = get_existing_fitbit(fitbit_member.user.access_token)
 
     # Set up user realm since rate limiting is per-user
     print(fitbit_member.user)
@@ -138,10 +139,21 @@ def fetch_fitbit_data(fitbit_member_id, access_token, fitbit_data=None):
     member_since = query_result['user']['memberSince']
     start_date = arrow.get(member_since, 'YYYY-MM-DD')
 
+    print(query_result)
+
+    fitbit_data = {}
+    print(fitbit_data)
+
     # Refresh token if the result is 401
     # TODO: update this so it just checks the expired field.
     # if query_result.status_code == 401:
     #     fitbit_member._refresh_tokens()
+
+    if not fitbit_data:
+        print("empty data")
+        print(fitbit_data)
+        # fitbit_data = {}
+        # return
 
     # Reset data if user account ID has changed.
     print("reset data if user account ID changed")
@@ -161,7 +173,7 @@ def fetch_fitbit_data(fitbit_member_id, access_token, fitbit_data=None):
         'memberSince': member_since,
         'strideLengthRunning': query_result['user']['strideLengthRunning'],
         'strideLengthWalking': query_result['user']['strideLengthWalking'],
-        'weight': query_result['user']['weight'],
+        'weight': query_result['user']['weight']
     }
 
     print("entering try block")
@@ -182,17 +194,23 @@ def fetch_fitbit_data(fitbit_member_id, access_token, fitbit_data=None):
                     realms=["Fitbit", 'fitbit-{}'.format(fitbit_member.user.oh_id)])
             print(r.text)
 
+            print(fitbit_data)
             fitbit_data[url['name']] = r.json()
 
         #Period year URLs
         print("period year")
+        print(fitbit_data)
         for url in [u for u in fitbit_urls if u['period'] == 'year']:
+            print("LOOPED OVER A URL" + str(url))
             years = arrow.Arrow.range('year', start_date.floor('year'),
                                     arrow.get())
+            print(years)
             for year_date in years:
+                print(year_date)
                 year = year_date.format('YYYY')
 
                 if year in fitbit_data[url['name']]:
+                    print("ENTERED SOME WEIRD CONTINUE BLOCK IN PERIOD YEAR")
                     logger.info('Skip retrieval {}: {}'.format(url['name'], year))
                     continue
 
@@ -236,28 +254,34 @@ def fetch_fitbit_data(fitbit_member_id, access_token, fitbit_data=None):
 
                 fitbit_data[url['name']][month] = r.json()
 
+    # except Exception as e:
+    #     print(e)
     except RequestsRespectfulRateLimitedError:
         logging.info('Requests-respectful reports rate limit hit.')
         print("hit requests respectful rate limit, going to requeue")
         fetch_fitbit_data.apply_async(args=[fitbit_member_id, fitbit_member.user.access_token], countdown=61)
         # raise RateLimitException()
-    finally:
-        print("calling finally")
-        print(fitbit_data)
-        replace_fitbit(fitbit_member.user, fitbit_data)
+    # finally:
+    #     print("calling finally")
+    #     print(fitbit_data)
+    #     replace_fitbit(fitbit_member.user, fitbit_data)
 
     # return fitbit_data
 
 
 def get_existing_fitbit(oh_access_token):
+    print("entered get_existing_fitbit")
     member = api.exchange_oauth2_member(oh_access_token)
     for dfile in member['data']:
-        if 'fitbit' in dfile['metadata']['tags']:
+        if 'Fitbit' in dfile['metadata']['tags']:
+            print("got inside fitbit if")
             # get file here and read the json into memory
             tf_in = tempfile.NamedTemporaryFile(suffix='.json')
             tf_in.write(requests.get(dfile['download_url']).content)
             tf_in.flush()
             fitbit_data = json.load(open(tf_in.name))
+            print("fetched data from OH")
+            print(fitbit_data)
             return fitbit_data
     return []
 
@@ -272,7 +296,7 @@ def replace_fitbit(oh_member, fitbit_data):
         'tags': ['Fitbit', 'activity', 'steps'],
         'updated_at': str(datetime.utcnow()),
         }
-    out_file = os.path.join(tmp_directory, 'fitbit-data.json')
+    out_file = os.path.join(tmp_directory, 'fitbit-data2.json')
     logger.debug('deleted old file for {}'.format(oh_member.oh_id))
     deleter = api.delete_file(oh_member.access_token,
                     oh_member.oh_id,
