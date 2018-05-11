@@ -214,6 +214,7 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
                         continue
                 except KeyError:
                     #something related to incomplete data
+                    fitbit_data[url['name']] = {}
                     pass
 
                 logger.info('Retrieving %s: %s', url['name'], year)
@@ -230,7 +231,6 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
 
                 # print([url['name']]['blah'])
                 # print([str(year)])
-                fitbit_data[url['name']] = {}
                 fitbit_data[url['name']][str(year)] = r.json()
 
         # Month period URLs/fetching
@@ -248,6 +248,7 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
                         continue
                 except KeyError:
                     #some weird empty data error
+                    fitbit_data[url['name']] = {}
                     pass
 
                 logger.info('Retrieving %s: %s', url['name'], month)
@@ -257,12 +258,11 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
                                                                     start_date=month_date.floor('month').format('YYYY-MM-DD'),
                                                                     end_date=month_date.ceil('month').format('YYYY-MM-DD'))
                 # Fetch the data
-                print(finacl_url)
+                print(final_url)
                 r = rr.get(url=final_url, 
                         headers=headers, 
                         realms=["Fitbit", 'fitbit-{}'.format(fitbit_member.user.oh_id)])
 
-                fitbit_data[url['name']] = {}
                 fitbit_data[url['name']][month] = r.json()
 
     except RequestsRespectfulRateLimitedError:
@@ -305,7 +305,7 @@ def replace_fitbit(oh_member, fitbit_data):
         'tags': ['Fitbit', 'activity', 'steps'],
         'updated_at': str(datetime.utcnow()),
         }
-    out_file = os.path.join(tmp_directory, 'fitbit-data2.json')
+    out_file = os.path.join(tmp_directory, 'fitbit-data.json')
     logger.debug('deleted old file for {}'.format(oh_member.oh_id))
     deleter = api.delete_file(oh_member.access_token,
                     oh_member.oh_id,
