@@ -260,7 +260,7 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
     except RequestsRespectfulRateLimitedError:
         logging.info('Requests-respectful reports rate limit hit.')
         print("hit requests respectful rate limit, going to requeue")
-        fetch_fitbit_data.apply_async(args=[fitbit_member_id, fitbit_member.user.access_token], countdown=61)
+        fetch_fitbit_data.apply_async(args=[fitbit_member_id, fitbit_member.user.access_token], countdown=3600)
         # raise RateLimitException()
     finally:
         print("calling finally")
