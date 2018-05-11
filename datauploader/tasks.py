@@ -138,11 +138,13 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
     user_id = query_result['user']['encodedId']
     member_since = query_result['user']['memberSince']
     start_date = arrow.get(member_since, 'YYYY-MM-DD')
+    # if not fitbit_data:
+    #     start_date = arrow.get(member_since, 'YYYY-MM-DD')
 
     print(query_result)
 
     # fitbit_data = {}
-    print(fitbit_data)
+    # print(fitbit_data)
 
     # Refresh token if the result is 401
     # TODO: update this so it just checks the expired field.
@@ -193,7 +195,7 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
                     realms=["Fitbit", 'fitbit-{}'.format(fitbit_member.user.oh_id)])
             print(r.text)
 
-            print(fitbit_data)
+            # print(fitbit_data)
             fitbit_data[url['name']] = r.json()
 
         #Period year URLs
@@ -208,14 +210,9 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
                 # print(year_date)
                 year = year_date.format('YYYY')
 
-                try:
-                    if year in fitbit_data[url['name']]:
-                        logger.info('Skip retrieval {}: {}'.format(url['name'], year))
-                        continue
-                except KeyError:
-                    #something related to incomplete data
-                    fitbit_data[url['name']] = {}
-                    pass
+                if year in fitbit_data[url['name']]:
+                    logger.info('Skip retrieval {}: {}'.format(url['name'], year))
+                    continue
 
                 logger.info('Retrieving %s: %s', url['name'], year)
                 # Build URL
@@ -234,7 +231,7 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
                 fitbit_data[url['name']][str(year)] = r.json()
 
         # Month period URLs/fetching
-        print(fitbit_data)
+        # print(fitbit_data)
         print("period month")
         for url in [u for u in fitbit_urls if u['period'] == 'month']:
             months = arrow.Arrow.range('month', start_date.floor('month'),
@@ -242,14 +239,9 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
             for month_date in months:
                 month = month_date.format('YYYY-MM')
 
-                try:
-                    if month in fitbit_data[url['name']]:
-                        logger.info('Skip retrieval {}: {}'.format(url['name'], month))
-                        continue
-                except KeyError:
-                    #some weird empty data error
-                    fitbit_data[url['name']] = {}
-                    pass
+                if month in fitbit_data[url['name']]:
+                    logger.info('Skip retrieval {}: {}'.format(url['name'], month))
+                    continue
 
                 logger.info('Retrieving %s: %s', url['name'], month)
                 # Build URL
@@ -272,7 +264,7 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
         # raise RateLimitException()
     finally:
         print("calling finally")
-        print(fitbit_data)
+        # print(fitbit_data)
         replace_fitbit(fitbit_member.user, fitbit_data)
 
     # return fitbit_data
@@ -289,8 +281,8 @@ def get_existing_fitbit(oh_access_token):
             tf_in.write(requests.get(dfile['download_url']).content)
             tf_in.flush()
             fitbit_data = json.load(open(tf_in.name))
-            print("fetched data from OH")
-            print(fitbit_data)
+            print("fetched existing data from OH")
+            # print(fitbit_data)
             return fitbit_data
     return {}
 
