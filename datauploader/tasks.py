@@ -121,7 +121,8 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
     fitbit_member = FitbitMember.objects.get(id=fitbit_member_id)
 
     # Get existing data as currently stored on OH
-    fitbit_data = get_existing_fitbit(fitbit_member.user.access_token)
+    fitbit_data = get_existing_fitbit(fitbit_member.user.access_token,
+                                      fitbit_urls)
 
     # Set up user realm since rate limiting is per-user
     print(fitbit_member.user)
@@ -163,7 +164,9 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
             logging.info(
                 'User ID changed from {} to {}. Resetting all data.'.format(
                     fitbit_data['profile']['encodedId'], user_id))
-            fitbit_data = defaultdict(dict)
+            fitbit_data = {}
+            for url in fitbit_urls:
+                fitbit_data[url['name']] = {}
         else:
             logging.debug('User ID ({}) matches old data.'.format(user_id))
 
@@ -178,7 +181,7 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
     }
 
     print("entering try block")
-    try: 
+    try:
         # Some block about if the period is none
         print("period none")
         for url in [u for u in fitbit_urls if u['period'] is None]:
@@ -190,8 +193,8 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
             final_url = fitbit_api_base_url + url['url'].format(user_id=user_id)
             # Fetch the data
             print(final_url)
-            r = rr.get(url=final_url, 
-                    headers=headers, 
+            r = rr.get(url=final_url,
+                    headers=headers,
                     realms=["Fitbit", 'fitbit-{}'.format(fitbit_member.user.oh_id)])
             print(r.text)
 
@@ -222,8 +225,8 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
                                                                     end_date=year_date.ceil('year').format('YYYY-MM-DD'))
                 # Fetch the data
                 print(final_url)
-                r = rr.get(url=final_url, 
-                        headers=headers, 
+                r = rr.get(url=final_url,
+                        headers=headers,
                         realms=["Fitbit", 'fitbit-{}'.format(fitbit_member.user.oh_id)])
 
                 # print([url['name']]['blah'])
@@ -251,8 +254,8 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
                                                                     end_date=month_date.ceil('month').format('YYYY-MM-DD'))
                 # Fetch the data
                 print(final_url)
-                r = rr.get(url=final_url, 
-                        headers=headers, 
+                r = rr.get(url=final_url,
+                        headers=headers,
                         realms=["Fitbit", 'fitbit-{}'.format(fitbit_member.user.oh_id)])
 
                 fitbit_data[url['name']][month] = r.json()
@@ -270,7 +273,7 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
     # return fitbit_data
 
 
-def get_existing_fitbit(oh_access_token):
+def get_existing_fitbit(oh_access_token, fitbit_urls):
     print("entered get_existing_fitbit")
     member = api.exchange_oauth2_member(oh_access_token)
     for dfile in member['data']:
@@ -284,7 +287,10 @@ def get_existing_fitbit(oh_access_token):
             print("fetched existing data from OH")
             # print(fitbit_data)
             return fitbit_data
-    return {}
+    fitbit_data = {}
+    for url in fitbit_urls:
+        fitbit_data[url['name']] = {}
+    return fitbit_data
 
 
 def replace_fitbit(oh_member, fitbit_data):
