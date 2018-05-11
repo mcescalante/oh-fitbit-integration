@@ -292,7 +292,7 @@ def get_existing_fitbit(oh_access_token):
             print("fetched data from OH")
             print(fitbit_data)
             return fitbit_data
-    return []
+    return {}
 
 
 def replace_fitbit(oh_member, fitbit_data):
