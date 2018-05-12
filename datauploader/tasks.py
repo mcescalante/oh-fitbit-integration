@@ -120,10 +120,10 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
     # Get Fitbit member object
     fitbit_member = FitbitMember.objects.get(id=fitbit_member_id)
     # Refresh fitbit and OH tokens
-    fitbit_member._refresh_tokens()
-    fitbit_member.user._refresh_tokens()
+    # fitbit_member._refresh_tokens()
+    # fitbit_member.user._refresh_tokens()
     # Get user again so we have updated tokens and not the original ones
-    fitbit_member = FitbitMember.objects.get(id=fitbit_member_id)
+    # fitbit_member = FitbitMember.objects.get(id=fitbit_member_id)
 
     # Get existing data as currently stored on OH
     fitbit_data = get_existing_fitbit(fitbit_member.user.access_token,
