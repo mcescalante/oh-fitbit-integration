@@ -125,9 +125,11 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
     # Get user again so we have updated tokens and not the original ones
     # fitbit_member = FitbitMember.objects.get(id=fitbit_member_id)
 
+    oh_access_token = fitbit_member.user.get_access_token()
+    fitbit_access_token = fitbit_member.get_access_token()
+    
     # Get existing data as currently stored on OH
-    fitbit_data = get_existing_fitbit(fitbit_member.user.access_token,
-                                      fitbit_urls)
+    fitbit_data = get_existing_fitbit(oh_access_token, fitbit_urls)
 
     # Set up user realm since rate limiting is per-user
     print(fitbit_member.user)
@@ -137,7 +139,7 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
 
     # Get initial information about user from Fitbit
     print("Creating header and going to get user profile")
-    headers = {'Authorization': "Bearer %s" % fitbit_member.access_token}
+    headers = {'Authorization': "Bearer %s" % fitbit_access_token}
     query_result = requests.get('https://api.fitbit.com/1/user/-/profile.json', headers=headers).json()
 
     # Store the user ID since it's used in all future queries
@@ -268,7 +270,7 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
     except RequestsRespectfulRateLimitedError:
         logging.info('Requests-respectful reports rate limit hit.')
         print("hit requests respectful rate limit, going to requeue")
-        fetch_fitbit_data.apply_async(args=[fitbit_member_id, fitbit_member.user.access_token], countdown=3600)
+        fetch_fitbit_data.apply_async(args=[fitbit_member_id, fitbit_access_token], countdown=3600)
         # raise RateLimitException()
     finally:
         print("calling finally")

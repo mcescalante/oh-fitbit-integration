@@ -27,6 +27,18 @@ class FitbitMember(models.Model):
     def get_expiration(expires_in):
         return (arrow.now() + timedelta(seconds=expires_in)).format()
 
+    def get_access_token(self,
+                         client_id=settings.FITBIT_CLIENT_ID,
+                         client_secret=settings.FITBIT_CLIENT_SECRET):
+        """
+        Return access token. Refresh first if necessary.
+        """
+        # Also refresh if nearly expired (less than 60s remaining).
+        delta = timedelta(seconds=60)
+        if arrow.get(self.expires_in) - delta < arrow.now():
+            self._refresh_tokens()
+        return self.access_token
+
     def _refresh_tokens(self):
         """
         Refresh access token.
