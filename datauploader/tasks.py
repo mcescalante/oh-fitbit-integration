@@ -127,7 +127,7 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
 
     oh_access_token = fitbit_member.user.get_access_token()
     fitbit_access_token = fitbit_member.get_access_token()
-    
+
     # Get existing data as currently stored on OH
     fitbit_data = get_existing_fitbit(oh_access_token, fitbit_urls)
 
@@ -249,7 +249,11 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
             for month_date in months:
                 month = month_date.format('YYYY-MM')
 
-                if month in fitbit_data[url['name']]:
+
+                current_month = arrow.utcnow().format('YYYY-MM')
+                if month in fitbit_data[url['name']] and month != current_month:
+                    print("skipping month, data is there")
+                    print(month)
                     logger.info('Skip retrieval {}: {}'.format(url['name'], month))
                     continue
 
