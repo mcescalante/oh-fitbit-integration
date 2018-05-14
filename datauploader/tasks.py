@@ -213,6 +213,10 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
         # print(fitbit_data)
         for url in [u for u in fitbit_urls if u['period'] == 'year']:
             # print("LOOPED OVER A URL" + str(url))
+            print("attempting to print the latest YEAR that data is present")
+            print(sorted(fitbit_data[url['name']].keys())[-1])
+            last_present_year = sorted(fitbit_data[url['name']].keys())[-1]
+
             years = arrow.Arrow.range('year', start_date.floor('year'),
                                     arrow.get())
             # print(years)
@@ -220,7 +224,7 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
                 # print(year_date)
                 year = year_date.format('YYYY')
 
-                if year in fitbit_data[url['name']]:
+                if year in fitbit_data[url['name']] and year != last_present_year:
                     logger.info('Skip retrieval {}: {}'.format(url['name'], year))
                     continue
 
@@ -244,14 +248,20 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
         # print(fitbit_data)
         print("period month")
         for url in [u for u in fitbit_urls if u['period'] == 'month']:
+            # get the last time there was data
+            print("attempting to print the latest month that data is present")
+            print(sorted(fitbit_data[url['name']].keys())[-1])
+            last_present_month = sorted(fitbit_data[url['name']].keys())[-1]
+
             months = arrow.Arrow.range('month', start_date.floor('month'),
                                     arrow.get())
             for month_date in months:
                 month = month_date.format('YYYY-MM')
 
+                # print("in month loop, here is the json data")
+                # print(fitbit_data[url['name']][month])
 
-                current_month = arrow.utcnow().format('YYYY-MM')
-                if month in fitbit_data[url['name']] and month != current_month:
+                if month in fitbit_data[url['name']] and month != last_present_month:
                     print("skipping month, data is there")
                     print(month)
                     logger.info('Skip retrieval {}: {}'.format(url['name'], month))
