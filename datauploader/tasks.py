@@ -280,6 +280,10 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
                         realms=["Fitbit", 'fitbit-{}'.format(fitbit_member.user.oh_id)])
 
                 fitbit_data[url['name']][month] = r.json()
+            
+        # Update the last updated date if the data successfully completes
+        fitbit_member.last_updated = arrow.now().format()
+        fitbit_member.save()
 
     except RequestsRespectfulRateLimitedError:
         logging.info('Requests-respectful reports rate limit hit.')
