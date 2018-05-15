@@ -46,7 +46,7 @@ def dashboard(request):
                 logout(request)
                 return redirect("/")
             auth_url = ''
-            allow_update = True
+            allow_update = check_update(fitbit_member)
         else:
             allow_update = False
             fitbit_member = ''
