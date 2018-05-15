@@ -119,9 +119,17 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
 
     # Get Fitbit member object
     fitbit_member = FitbitMember.objects.get(id=fitbit_member_id)
+    # Refresh fitbit and OH tokens
+    # fitbit_member._refresh_tokens()
+    # fitbit_member.user._refresh_tokens()
+    # Get user again so we have updated tokens and not the original ones
+    # fitbit_member = FitbitMember.objects.get(id=fitbit_member_id)
+
+    oh_access_token = fitbit_member.user.get_access_token()
+    fitbit_access_token = fitbit_member.get_access_token()
 
     # Get existing data as currently stored on OH
-    fitbit_data = get_existing_fitbit(fitbit_member.user.access_token)
+    fitbit_data = get_existing_fitbit(oh_access_token, fitbit_urls)
 
     # Set up user realm since rate limiting is per-user
     print(fitbit_member.user)
@@ -131,18 +139,20 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
 
     # Get initial information about user from Fitbit
     print("Creating header and going to get user profile")
-    headers = {'Authorization': "Bearer %s" % fitbit_member.access_token}
+    headers = {'Authorization': "Bearer %s" % fitbit_access_token}
     query_result = requests.get('https://api.fitbit.com/1/user/-/profile.json', headers=headers).json()
 
     # Store the user ID since it's used in all future queries
     user_id = query_result['user']['encodedId']
     member_since = query_result['user']['memberSince']
     start_date = arrow.get(member_since, 'YYYY-MM-DD')
+    # if not fitbit_data:
+    #     start_date = arrow.get(member_since, 'YYYY-MM-DD')
 
     print(query_result)
 
     # fitbit_data = {}
-    print(fitbit_data)
+    # print(fitbit_data)
 
     # Refresh token if the result is 401
     # TODO: update this so it just checks the expired field.
@@ -161,7 +171,9 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
             logging.info(
                 'User ID changed from {} to {}. Resetting all data.'.format(
                     fitbit_data['profile']['encodedId'], user_id))
-            fitbit_data = defaultdict(dict)
+            fitbit_data = {}
+            for url in fitbit_urls:
+                fitbit_data[url['name']] = {}
         else:
             logging.debug('User ID ({}) matches old data.'.format(user_id))
 
@@ -176,7 +188,7 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
     }
 
     print("entering try block")
-    try: 
+    try:
         # Some block about if the period is none
         print("period none")
         for url in [u for u in fitbit_urls if u['period'] is None]:
@@ -188,12 +200,12 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
             final_url = fitbit_api_base_url + url['url'].format(user_id=user_id)
             # Fetch the data
             print(final_url)
-            r = rr.get(url=final_url, 
-                    headers=headers, 
+            r = rr.get(url=final_url,
+                    headers=headers,
                     realms=["Fitbit", 'fitbit-{}'.format(fitbit_member.user.oh_id)])
             print(r.text)
 
-            print(fitbit_data)
+            # print(fitbit_data)
             fitbit_data[url['name']] = r.json()
 
         #Period year URLs
@@ -201,6 +213,10 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
         # print(fitbit_data)
         for url in [u for u in fitbit_urls if u['period'] == 'year']:
             # print("LOOPED OVER A URL" + str(url))
+            print("attempting to print the latest YEAR that data is present")
+            print(sorted(fitbit_data[url['name']].keys())[-1])
+            last_present_year = sorted(fitbit_data[url['name']].keys())[-1]
+
             years = arrow.Arrow.range('year', start_date.floor('year'),
                                     arrow.get())
             # print(years)
@@ -208,13 +224,9 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
                 # print(year_date)
                 year = year_date.format('YYYY')
 
-                try:
-                    if year in fitbit_data[url['name']]:
-                        logger.info('Skip retrieval {}: {}'.format(url['name'], year))
-                        continue
-                except KeyError:
-                    #something related to incomplete data
-                    pass
+                if year in fitbit_data[url['name']] and year != last_present_year:
+                    logger.info('Skip retrieval {}: {}'.format(url['name'], year))
+                    continue
 
                 logger.info('Retrieving %s: %s', url['name'], year)
                 # Build URL
@@ -224,31 +236,36 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
                                                                     end_date=year_date.ceil('year').format('YYYY-MM-DD'))
                 # Fetch the data
                 print(final_url)
-                r = rr.get(url=final_url, 
-                        headers=headers, 
+                r = rr.get(url=final_url,
+                        headers=headers,
                         realms=["Fitbit", 'fitbit-{}'.format(fitbit_member.user.oh_id)])
 
                 # print([url['name']]['blah'])
                 # print([str(year)])
-                fitbit_data[url['name']] = {}
                 fitbit_data[url['name']][str(year)] = r.json()
 
         # Month period URLs/fetching
-        print(fitbit_data)
+        # print(fitbit_data)
         print("period month")
         for url in [u for u in fitbit_urls if u['period'] == 'month']:
+            # get the last time there was data
+            print("attempting to print the latest month that data is present")
+            print(sorted(fitbit_data[url['name']].keys())[-1])
+            last_present_month = sorted(fitbit_data[url['name']].keys())[-1]
+
             months = arrow.Arrow.range('month', start_date.floor('month'),
                                     arrow.get())
             for month_date in months:
                 month = month_date.format('YYYY-MM')
 
-                try:
-                    if month in fitbit_data[url['name']]:
-                        logger.info('Skip retrieval {}: {}'.format(url['name'], month))
-                        continue
-                except KeyError:
-                    #some weird empty data error
-                    pass
+                # print("in month loop, here is the json data")
+                # print(fitbit_data[url['name']][month])
+
+                if month in fitbit_data[url['name']] and month != last_present_month:
+                    print("skipping month, data is there")
+                    print(month)
+                    logger.info('Skip retrieval {}: {}'.format(url['name'], month))
+                    continue
 
                 logger.info('Retrieving %s: %s', url['name'], month)
                 # Build URL
@@ -257,28 +274,31 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
                                                                     start_date=month_date.floor('month').format('YYYY-MM-DD'),
                                                                     end_date=month_date.ceil('month').format('YYYY-MM-DD'))
                 # Fetch the data
-                print(finacl_url)
-                r = rr.get(url=final_url, 
-                        headers=headers, 
+                print(final_url)
+                r = rr.get(url=final_url,
+                        headers=headers,
                         realms=["Fitbit", 'fitbit-{}'.format(fitbit_member.user.oh_id)])
 
-                fitbit_data[url['name']] = {}
                 fitbit_data[url['name']][month] = r.json()
+            
+        # Update the last updated date if the data successfully completes
+        fitbit_member.last_updated = arrow.now().format()
+        fitbit_member.save()
 
     except RequestsRespectfulRateLimitedError:
         logging.info('Requests-respectful reports rate limit hit.')
         print("hit requests respectful rate limit, going to requeue")
-        fetch_fitbit_data.apply_async(args=[fitbit_member_id, fitbit_member.user.access_token], countdown=61)
+        fetch_fitbit_data.apply_async(args=[fitbit_member_id, fitbit_access_token], countdown=3600)
         # raise RateLimitException()
     finally:
         print("calling finally")
-        print(fitbit_data)
+        # print(fitbit_data)
         replace_fitbit(fitbit_member.user, fitbit_data)
 
     # return fitbit_data
 
 
-def get_existing_fitbit(oh_access_token):
+def get_existing_fitbit(oh_access_token, fitbit_urls):
     print("entered get_existing_fitbit")
     member = api.exchange_oauth2_member(oh_access_token)
     for dfile in member['data']:
@@ -289,10 +309,13 @@ def get_existing_fitbit(oh_access_token):
             tf_in.write(requests.get(dfile['download_url']).content)
             tf_in.flush()
             fitbit_data = json.load(open(tf_in.name))
-            print("fetched data from OH")
-            print(fitbit_data)
+            print("fetched existing data from OH")
+            # print(fitbit_data)
             return fitbit_data
-    return []
+    fitbit_data = {}
+    for url in fitbit_urls:
+        fitbit_data[url['name']] = {}
+    return fitbit_data
 
 
 def replace_fitbit(oh_member, fitbit_data):
@@ -305,7 +328,7 @@ def replace_fitbit(oh_member, fitbit_data):
         'tags': ['Fitbit', 'activity', 'steps'],
         'updated_at': str(datetime.utcnow()),
         }
-    out_file = os.path.join(tmp_directory, 'fitbit-data2.json')
+    out_file = os.path.join(tmp_directory, 'fitbit-data.json')
     logger.debug('deleted old file for {}'.format(oh_member.oh_id))
     deleter = api.delete_file(oh_member.access_token,
                     oh_member.oh_id,

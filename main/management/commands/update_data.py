@@ -3,17 +3,17 @@ from main.models import FitbitMember
 from open_humans.models import OpenHumansMember
 from main.views import fetch_fitbit_data
 from fitbit.settings import OPENHUMANS_CLIENT_ID, OPENHUMANS_CLIENT_SECRET
+import arrow
+from datetime import timedelta
 
 class Command(BaseCommand):
     help = 'Update data for all users'
 
     def handle(self, *args, **options):
-        # OH token refresh (for all users)
-        # oh_users = OpenHumansMember.objects.all()
-        # for user in users:
-        #     user._refresh_tokens(OPENHUMANS_CLIENT_ID, OPENHUMANS_CLIENT_SECRET)
-
-        # Fitbit token refresh (for all users)
         fitbit_users = FitbitMember.objects.all()
         for user in fitbit_users:
-            user._refresh_tokens()
+            if user.last_updated < (arrow.now() - timedelta(days=4)):
+                print("running update for user {}".format(user.userid))
+                fetch_fitbit_data.delay(user.id, user.access_token)
+            else:
+                print("didn't update {}".format(user.userid))

@@ -107,7 +107,7 @@ def complete_fitbit(request):
 
     # Fetch user's data from Fitbit (update the data if it already existed)
     # print(fitbit_member)
-    # alldata = fetch_fitbit_data.delay(fitbit_member.id, rjson['access_token'])
+    alldata = fetch_fitbit_data.delay(fitbit_member.id, rjson['access_token'])
 
     context = {'oh_proj_page': settings.OH_ACTIVITY_PAGE}
 
@@ -145,7 +145,7 @@ def update_data(request):
     if request.method == "POST" and request.user.is_authenticated:
         print("entered update_data POST thing")
         oh_member = request.user.oh_member
-        fetch_fitbit_data(oh_member.fitbit_member.id, oh_member.fitbit_member.access_token)
+        fetch_fitbit_data.delay(oh_member.fitbit_member.id, oh_member.fitbit_member.access_token)
         fitbit_member = oh_member.fitbit_member
         fitbit_member.last_submitted = arrow.now().format()
         fitbit_member.save()
