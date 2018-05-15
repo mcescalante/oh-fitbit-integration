@@ -11,6 +11,7 @@ class Command(BaseCommand):
         fitbit_users = FitbitMember.objects.all()
         for user in fitbit_users:
             if user.last_submitted < (arrow.now() - timedelta(days=4)):
+                print("running update for user {}".format(user.userid))
                 fetch_fitbit_data.delay(user.id, user.access_token)
             else:
                 print("didn't update {}".format(user.userid))
