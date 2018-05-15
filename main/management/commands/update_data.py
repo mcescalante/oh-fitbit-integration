@@ -3,6 +3,8 @@ from main.models import FitbitMember
 from open_humans.models import OpenHumansMember
 from main.views import fetch_fitbit_data
 from fitbit.settings import OPENHUMANS_CLIENT_ID, OPENHUMANS_CLIENT_SECRET
+import arrow
+from datetime import timedelta
 
 class Command(BaseCommand):
     help = 'Update data for all users'
