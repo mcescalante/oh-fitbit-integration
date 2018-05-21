@@ -214,8 +214,12 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
         for url in [u for u in fitbit_urls if u['period'] == 'year']:
             # print("LOOPED OVER A URL" + str(url))
             print("attempting to print the latest YEAR that data is present")
-            print(sorted(fitbit_data[url['name']].keys())[-1])
-            last_present_year = sorted(fitbit_data[url['name']].keys())[-1]
+            if len(list(fitbit_data[url['name']].keys())) > 0:
+                print(sorted(fitbit_data[url['name']].keys())[-1])
+                last_present_year = sorted(fitbit_data[url['name']].keys())[-1]
+            else:
+                print('no prior data')
+                last_present_year = ""
 
             years = arrow.Arrow.range('year', start_date.floor('year'),
                                     arrow.get())
@@ -250,8 +254,12 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
         for url in [u for u in fitbit_urls if u['period'] == 'month']:
             # get the last time there was data
             print("attempting to print the latest month that data is present")
-            print(sorted(fitbit_data[url['name']].keys())[-1])
-            last_present_month = sorted(fitbit_data[url['name']].keys())[-1]
+            if len(list(fitbit_data[url['name']].keys())) > 0:
+                print(sorted(fitbit_data[url['name']].keys())[-1])
+                last_present_month = sorted(fitbit_data[url['name']].keys())[-1]
+            else:
+                print('no prior month')
+                last_present_month = ""
 
             months = arrow.Arrow.range('month', start_date.floor('month'),
                                     arrow.get())
@@ -280,7 +288,7 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
                         realms=["Fitbit", 'fitbit-{}'.format(fitbit_member.user.oh_id)])
 
                 fitbit_data[url['name']][month] = r.json()
-            
+
         # Update the last updated date if the data successfully completes
         fitbit_member.last_updated = arrow.now().format()
         fitbit_member.save()
