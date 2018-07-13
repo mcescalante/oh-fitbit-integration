@@ -17,7 +17,6 @@ raven = "*"
 vcrpy = "*"
 pyyaml = "*"
 redis = "*"
-requests-respectful = { git = 'https://github.com/mcescalante/requests-respectful.git', editable = 'true' }
 iptools = "*"
 pyjq = "*"
 open-humans-api = "*"
