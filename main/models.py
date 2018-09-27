@@ -60,5 +60,5 @@ class FitbitMember(models.Model):
             self.scope = data['scope']
             self.userid = data['user_id']
             self.save()
-            return None
-        return 1
+            return True
+        return False
