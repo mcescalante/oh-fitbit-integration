@@ -26,7 +26,9 @@ class Command(BaseCommand):
                     oh_member = OpenHumansMember.get(oh_id=oh_id)
                     fitbit_member = oh_member.fitbit_member
                     print(fitbit_member)
-                    fitbit_member.refresh_token = fitbit_refresh_token
-                    fitbit_member.save()
-                    fitbit_member._refresh_tokens()
+                    successful_refresh = fitbit_member._refresh_tokens()
+                    if not successful_refresh:
+                        fitbit_member.refresh_token = fitbit_refresh_token
+                        fitbit_member.save()
+                        fitbit_member._refresh_tokens()
                     # fetch_fitbit_data.delay(oh_member.oh_id, oh_member.fitbit_member.access_token)
