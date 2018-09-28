@@ -23,7 +23,7 @@ class Command(BaseCommand):
                 fitbit_refresh_token = line[2]
                 if len(OpenHumansMember.objects.filter(
                             oh_id=oh_id)) == 1:
-                    oh_member = OpenHumansMember.get(oh_id=oh_id)
+                    oh_member = OpenHumansMember.objects.get(oh_id=oh_id)
                     fitbit_member = oh_member.fitbit_member
                     print(fitbit_member)
                     successful_refresh = fitbit_member._refresh_tokens()
