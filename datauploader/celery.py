@@ -19,14 +19,14 @@ from django.conf import settings
 
 # from main.models import GoogleFitMember
 
-CELERY_BROKER_URL = os.getenv('REDIS_URL')
+CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://')
 
 # set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE',
                       'googlefit.settings')
 
 app = Celery('datauploader', broker=CELERY_BROKER_URL)
-# Set up Celery with Heroku CloudAMQP (or AMQP in local dev).
+# Set up Celery with Heroku Redis or local Redis
 app.conf.update({
     'BROKER_URL': CELERY_BROKER_URL,
     # Recommended settings. See: https://www.cloudamqp.com/docs/celery.html
