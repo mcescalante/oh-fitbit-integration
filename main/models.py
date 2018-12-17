@@ -16,20 +16,19 @@ class GoogleFitMember(models.Model):
     This is a one to one relationship with a OpenHumansMember object.
     """
     user = models.OneToOneField(OpenHumansMember, related_name="googlefit_member", on_delete=models.CASCADE)
-    userid = models.CharField(max_length=255, unique=True, null=True)
     access_token = models.CharField(max_length=512)
     refresh_token = models.CharField(max_length=512)
-    expires_in = models.CharField(max_length=512, default=3600)
+    expiry_date = models.DateTimeField(max_length=512, default=(arrow.now() + timedelta(hours=1)).format())
     scope = models.CharField(max_length=512)
-    token_type = models.CharField(max_length=512)
-    last_updated = models.DateTimeField(
-                            default=(arrow.now() - timedelta(days=7)).format())
-    last_submitted = models.DateTimeField(
-                            default=(arrow.now() - timedelta(days=7)).format())
+    #token_type = models.CharField(max_length=512)
+    #last_updated = models.DateTimeField(
+    #                        default=(arrow.now() - timedelta(days=7)).format())
+    #last_submitted = models.DateTimeField(
+    #                        default=(arrow.now() - timedelta(days=7)).format())
 
     @staticmethod
     def get_expiration(expires_in):
-        return (arrow.now() + timedelta(seconds=expires_in)).format()
+        raise Exception('implement me..or delete mee')
 
     def get_access_token(self):
         """
@@ -37,7 +36,7 @@ class GoogleFitMember(models.Model):
         """
         # Also refresh if nearly expired (less than 60s remaining).
         delta = timedelta(seconds=60)
-        if arrow.get(self.expires_in) - delta < arrow.now():
+        if arrow.get(self.expiry_date) - delta < arrow.now():
             self._refresh_tokens()
         return self.access_token
 
@@ -58,6 +57,7 @@ class GoogleFitMember(models.Model):
             credentials.refresh(request)
             self.access_token = credentials.token
             self.refresh_token = credentials.refresh_token
+            self.expiry_date = credentials.token_expiry
             self.save()
             return True
         return False

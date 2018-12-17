@@ -90,34 +90,20 @@ def complete_googlefit(request):
 
     credentials = flow.credentials
 
-    return JsonResponse({'token': credentials.token})
+    if hasattr(request.user.openhumansmember, 'googlefit_member'):
+        googlefit_member = request.user.openhumansmember.googlefit_member
+    else:
+        googlefit_member = GoogleFitMember()
 
+    googlefit_member.access_token = credentials.token
+    googlefit_member.refresh_token = credentials.refresh_token
+    googlefit_member.expiry_date = credentials.token_expiry
+    googlefit_member.scope = credentials.scope
+    googlefit_member.save()
 
-    oh_id = request.user.oh_member.oh_id
-    oh_user = OpenHumansMember.objects.get(oh_id=oh_id)
-
-    # Save the user as a GoogleFitMember and store tokens
-    try:
-        googlefit_member = GoogleFitMember.objects.get(userid=rjson['user_id'])
-        googlefit_member.access_token = rjson['access_token']
-        googlefit_member.refresh_token = rjson['refresh_token']
-        googlefit_member.expires_in = rjson['expires_in']
-        googlefit_member.scope = rjson['scope']
-        googlefit_member.token_type = rjson['token_type']
-        googlefit_member.save()
-    except GoogleFitMember.DoesNotExist:
-        googlefit_member, created = GoogleFitMember.objects.get_or_create(
-            user=oh_user,
-            userid=rjson['user_id'],
-            access_token=rjson['access_token'],
-            refresh_token=rjson['refresh_token'],
-            expires_in=rjson['expires_in'],
-            scope=rjson['scope'],
-            token_type=rjson['token_type'])
-
-    # Fetch user's data from GoogleFit (update the data if it already existed)
+    # TODO: Fetch user's data from GoogleFit (update the data if it already exists)
     # print(googlefit_member)
-    alldata = fetch_googlefit_data.delay(googlefit_member.id, rjson['access_token'])
+    #alldata = fetch_googlefit_data.delay(googlefit_member.id, rjson['access_token'])
 
     if googlefit_member:
         messages.info(request, "Your GoogleFit account has been connected, and your data has been queued to be fetched from GoogleFit")
