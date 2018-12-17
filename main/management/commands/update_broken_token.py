@@ -1,12 +1,12 @@
 from django.core.management.base import BaseCommand
-from main.models import FitbitMember
+from main.models import GoogleFitMember
 from open_humans.models import OpenHumansMember
-from datauploader.tasks import fetch_fitbit_data
-# from fitbit.settings import OPENHUMANS_CLIENT_ID, OPENHUMANS_CLIENT_SECRET
+from datauploader.tasks import fetch_googlefit_data
+# from googlefit.settings import OPENHUMANS_CLIENT_ID, OPENHUMANS_CLIENT_SECRET
 from django.conf import settings
 
 class Command(BaseCommand):
-    help = 'Refresh Fitbit tokens that were previously broken'
+    help = 'Refresh GoogleFit tokens that were previously broken'
 
     def add_arguments(self, parser):
         parser.add_argument('--infile', type=str,
@@ -20,16 +20,16 @@ class Command(BaseCommand):
                 line = line.strip().split(options['delimiter'])
                 oh_id = line[0]
                 oh_refresh_token = line[1]
-                fitbit_refresh_token = line[2]
+                googlefit_refresh_token = line[2]
                 if len(OpenHumansMember.objects.filter(
                             oh_id=oh_id)) == 1:
                     oh_member = OpenHumansMember.objects.get(oh_id=oh_id)
-                    if hasattr(oh_member, 'fitbit_member'):
-                        fitbit_member = oh_member.fitbit_member
-                        print(fitbit_member)
-                        successful_refresh = fitbit_member._refresh_tokens()
+                    if hasattr(oh_member, 'googlefit_member'):
+                        googlefit_member = oh_member.googlefit_member
+                        print(googlefit_member)
+                        successful_refresh = googlefit_member._refresh_tokens()
                         if not successful_refresh:
-                            fitbit_member.refresh_token = fitbit_refresh_token
-                            fitbit_member.save()
-                            fitbit_member._refresh_tokens()
-                    # fetch_fitbit_data.delay(oh_member.oh_id, oh_member.fitbit_member.access_token)
+                            googlefit_member.refresh_token = googlefit_refresh_token
+                            googlefit_member.save()
+                            googlefit_member._refresh_tokens()
+                    # fetch_googlefit_data.delay(oh_member.oh_id, oh_member.googlefit_member.access_token)

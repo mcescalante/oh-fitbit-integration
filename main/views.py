@@ -9,19 +9,19 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.shortcuts import render, redirect
 from django.conf import settings
-from datauploader.tasks import fetch_fitbit_data
+from datauploader.tasks import fetch_googlefit_data
 from urllib.parse import parse_qs
 from open_humans.models import OpenHumansMember
-from .models import FitbitMember
-from .helpers import get_fitbit_file, check_update
+from .models import GoogleFitMember
+from .helpers import get_googlefit_file, check_update
 
 
 # Set up logging.
 logger = logging.getLogger(__name__)
 
-# Fitbit settings
-fitbit_authorize_url = 'https://www.fitbit.com/oauth2/authorize'
-fitbit_token_url = 'https://api.fitbit.com/oauth2/token'
+# GoogleFit settings
+googlefit_authorize_url = 'https://www.googlefit.com/oauth2/authorize'
+googlefit_token_url = 'https://api.googlefit.com/oauth2/token'
 
 
 def index(request):
@@ -39,23 +39,23 @@ def index(request):
 
 def dashboard(request):
     if request.user.is_authenticated:
-        if hasattr(request.user.oh_member, 'fitbit_member'):
-            fitbit_member = request.user.oh_member.fitbit_member
-            download_file = get_fitbit_file(request.user.oh_member)
+        if hasattr(request.user.oh_member, 'googlefit_member'):
+            googlefit_member = request.user.oh_member.googlefit_member
+            download_file = get_googlefit_file(request.user.oh_member)
             if download_file == 'error':
                 logout(request)
                 return redirect("/")
             auth_url = ''
-            allow_update = check_update(fitbit_member)
+            allow_update = check_update(googlefit_member)
         else:
             allow_update = False
-            fitbit_member = ''
+            googlefit_member = ''
             download_file = ''
-            auth_url = 'https://www.fitbit.com/oauth2/authorize?response_type=code&client_id='+settings.FITBIT_CLIENT_ID+'&scope=activity%20nutrition%20heartrate%20location%20nutrition%20profile%20settings%20sleep%20social%20weight'
+            auth_url = 'https://www.googlefit.com/oauth2/authorize?response_type=code&client_id='+settings.FITBIT_CLIENT_ID+'&scope=activity%20nutrition%20heartrate%20location%20nutrition%20profile%20settings%20sleep%20social%20weight'
         
         context = {
             'oh_member': request.user.oh_member,
-            'fitbit_member': fitbit_member,
+            'googlefit_member': googlefit_member,
             'download_file': download_file,
             'connect_url': auth_url,
             'allow_update': allow_update
@@ -65,20 +65,20 @@ def dashboard(request):
     return redirect("/")
 
 
-def complete_fitbit(request):
+def complete_googlefit(request):
 
     code = request.GET['code']
 
-    # Create Base64 encoded string of clientid:clientsecret for the headers for Fitbit
-    # https://dev.fitbit.com/build/reference/web-api/oauth2/#access-token-request
-    encode_fitbit_auth = str(settings.FITBIT_CLIENT_ID) + ":" + str(settings.FITBIT_CLIENT_SECRET)
-    print(encode_fitbit_auth)
-    b64header = base64.b64encode(encode_fitbit_auth.encode("UTF-8")).decode("UTF-8")
+    # Create Base64 encoded string of clientid:clientsecret for the headers for GoogleFit
+    # https://dev.googlefit.com/build/reference/web-api/oauth2/#access-token-request
+    encode_googlefit_auth = str(settings.FITBIT_CLIENT_ID) + ":" + str(settings.FITBIT_CLIENT_SECRET)
+    print(encode_googlefit_auth)
+    b64header = base64.b64encode(encode_googlefit_auth.encode("UTF-8")).decode("UTF-8")
     # Add the payload of code and grant_type. Construct headers
     payload = {'code': code, 'grant_type': 'authorization_code'}
     headers = {'Content-Type': 'application/x-www-form-urlencoded', 'Authorization': 'Basic %s' % (b64header)}
     # Make request for access token
-    r = requests.post(fitbit_token_url, payload, headers=headers)
+    r = requests.post(googlefit_token_url, payload, headers=headers)
     # print(r.json())
 
     rjson = r.json()
@@ -86,17 +86,17 @@ def complete_fitbit(request):
     oh_id = request.user.oh_member.oh_id
     oh_user = OpenHumansMember.objects.get(oh_id=oh_id)
 
-    # Save the user as a FitbitMember and store tokens
+    # Save the user as a GoogleFitMember and store tokens
     try:
-        fitbit_member = FitbitMember.objects.get(userid=rjson['user_id'])
-        fitbit_member.access_token = rjson['access_token']
-        fitbit_member.refresh_token = rjson['refresh_token']
-        fitbit_member.expires_in = rjson['expires_in']
-        fitbit_member.scope = rjson['scope']
-        fitbit_member.token_type = rjson['token_type']
-        fitbit_member.save()
-    except FitbitMember.DoesNotExist:
-        fitbit_member, created = FitbitMember.objects.get_or_create(
+        googlefit_member = GoogleFitMember.objects.get(userid=rjson['user_id'])
+        googlefit_member.access_token = rjson['access_token']
+        googlefit_member.refresh_token = rjson['refresh_token']
+        googlefit_member.expires_in = rjson['expires_in']
+        googlefit_member.scope = rjson['scope']
+        googlefit_member.token_type = rjson['token_type']
+        googlefit_member.save()
+    except GoogleFitMember.DoesNotExist:
+        googlefit_member, created = GoogleFitMember.objects.get_or_create(
             user=oh_user,
             userid=rjson['user_id'],
             access_token=rjson['access_token'],
@@ -105,35 +105,35 @@ def complete_fitbit(request):
             scope=rjson['scope'],
             token_type=rjson['token_type'])
 
-    # Fetch user's data from Fitbit (update the data if it already existed)
-    # print(fitbit_member)
-    alldata = fetch_fitbit_data.delay(fitbit_member.id, rjson['access_token'])
+    # Fetch user's data from GoogleFit (update the data if it already existed)
+    # print(googlefit_member)
+    alldata = fetch_googlefit_data.delay(googlefit_member.id, rjson['access_token'])
 
     context = {'oh_proj_page': settings.OH_ACTIVITY_PAGE}
 
-    if fitbit_member:
-        messages.info(request, "Your Fitbit account has been connected, and your data has been queued to be fetched from Fitbit")
+    if googlefit_member:
+        messages.info(request, "Your GoogleFit account has been connected, and your data has been queued to be fetched from GoogleFit")
         return redirect('/dashboard')
 
     logger.debug('Invalid code exchange. User returned to starting page.')
     messages.info(request, ("Something went wrong, please try connecting your "
-                            "Fitbit account again"))
+                            "GoogleFit account again"))
     return redirect('/dashboard')
 
 
-def remove_fitbit(request):
+def remove_googlefit(request):
     if request.method == "POST" and request.user.is_authenticated:
         try:
             oh_member = request.user.oh_member
             api.delete_file(oh_member.access_token,
                             oh_member.oh_id,
-                            file_basename="fitbit-data.json")
-            messages.info(request, "Your Fitbit account has been removed")
-            fitbit_account = request.user.oh_member.fitbit_member
-            fitbit_account.delete()
+                            file_basename="googlefit-data.json")
+            messages.info(request, "Your GoogleFit account has been removed")
+            googlefit_account = request.user.oh_member.googlefit_member
+            googlefit_account.delete()
         except:
-            fitbit_account = request.user.oh_member.fitbit_member
-            fitbit_account.delete()
+            googlefit_account = request.user.oh_member.googlefit_member
+            googlefit_account.delete()
             messages.info(request, ("Something went wrong, please"
                           "re-authorize us on Open Humans"))
             logout(request)
@@ -145,12 +145,12 @@ def update_data(request):
     if request.method == "POST" and request.user.is_authenticated:
         print("entered update_data POST thing")
         oh_member = request.user.oh_member
-        fetch_fitbit_data.delay(oh_member.fitbit_member.id, oh_member.fitbit_member.access_token)
-        fitbit_member = oh_member.fitbit_member
-        fitbit_member.last_submitted = arrow.now().format()
-        fitbit_member.save()
+        fetch_googlefit_data.delay(oh_member.googlefit_member.id, oh_member.googlefit_member.access_token)
+        googlefit_member = oh_member.googlefit_member
+        googlefit_member.last_submitted = arrow.now().format()
+        googlefit_member.save()
         messages.info(request,
-                      ("An update of your Fitbit data has been started! "
+                      ("An update of your GoogleFit data has been started! "
                        "It can take some minutes before the first data is "
                        "available. Reload this page in a while to find your "
                        "data"))
@@ -176,10 +176,10 @@ def complete(request):
         context = {'oh_id': oh_member.oh_id,
                    'oh_proj_page': settings.OH_ACTIVITY_PAGE}
 
-        if not hasattr(oh_member, 'fitbitmember'):
-            auth_url = 'https://www.fitbit.com/oauth2/authorize?response_type=code&client_id='+settings.FITBIT_CLIENT_ID+'&scope=activity%20nutrition%20heartrate%20location%20nutrition%20profile%20settings%20sleep%20social%20weight'
+        if not hasattr(oh_member, 'googlefitmember'):
+            auth_url = 'https://www.googlefit.com/oauth2/authorize?response_type=code&client_id='+settings.FITBIT_CLIENT_ID+'&scope=activity%20nutrition%20heartrate%20location%20nutrition%20profile%20settings%20sleep%20social%20weight'
             context['auth_url'] = auth_url
-            return render(request, 'main/fitbit.html',
+            return render(request, 'main/googlefit.html',
                         context=context)
         
         return redirect("/dashboard")

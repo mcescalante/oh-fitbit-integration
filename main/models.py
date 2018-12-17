@@ -6,12 +6,12 @@ import requests
 import arrow
 
 
-class FitbitMember(models.Model):
+class GoogleFitMember(models.Model):
     """
-    Store OAuth2 data for a Fitbit Member.
+    Store OAuth2 data for a GoogleFit Member.
     This is a one to one relationship with a OpenHumansMember object.
     """
-    user = models.OneToOneField(OpenHumansMember, related_name="fitbit_member", on_delete=models.CASCADE)
+    user = models.OneToOneField(OpenHumansMember, related_name="googlefit_member", on_delete=models.CASCADE)
     userid = models.CharField(max_length=255, unique=True, null=True)
     access_token = models.CharField(max_length=512)
     refresh_token = models.CharField(max_length=512)
@@ -45,7 +45,7 @@ class FitbitMember(models.Model):
         """
         print("calling refresh token method in class")
         response = requests.post(
-            'https://api.fitbit.com/oauth2/token',
+            'https://api.googlefit.com/oauth2/token',
             data={
                 'grant_type': 'refresh_token',
                 'refresh_token': self.refresh_token},

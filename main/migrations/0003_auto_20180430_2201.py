@@ -11,27 +11,27 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterField(
-            model_name='fitbitmember',
+            model_name='googlefitmember',
             name='access_token',
             field=models.CharField(max_length=512),
         ),
         migrations.AlterField(
-            model_name='fitbitmember',
+            model_name='googlefitmember',
             name='expires_in',
             field=models.CharField(max_length=512),
         ),
         migrations.AlterField(
-            model_name='fitbitmember',
+            model_name='googlefitmember',
             name='refresh_token',
             field=models.CharField(max_length=512),
         ),
         migrations.AlterField(
-            model_name='fitbitmember',
+            model_name='googlefitmember',
             name='scope',
             field=models.CharField(max_length=512),
         ),
         migrations.AlterField(
-            model_name='fitbitmember',
+            model_name='googlefitmember',
             name='token_type',
             field=models.CharField(max_length=512),
         ),

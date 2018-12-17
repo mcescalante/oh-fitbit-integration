@@ -11,12 +11,12 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name='fitbitmember',
+            model_name='googlefitmember',
             name='last_submitted',
             field=models.DateTimeField(default='2018-04-27 17:22:52+00:00'),
         ),
         migrations.AddField(
-            model_name='fitbitmember',
+            model_name='googlefitmember',
             name='last_updated',
             field=models.DateTimeField(default='2018-04-27 17:22:52+00:00'),
         ),

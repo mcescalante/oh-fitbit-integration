@@ -12,8 +12,8 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterField(
-            model_name='fitbitmember',
+            model_name='googlefitmember',
             name='user',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='fitbit_member', to='open_humans.OpenHumansMember'),
+            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='googlefit_member', to='open_humans.OpenHumansMember'),
         ),
     ]

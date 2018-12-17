@@ -1,5 +1,5 @@
 """
-WSGI config for oh-fitbit-integration project.
+WSGI config for oh-googlefit-integration project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
@@ -12,6 +12,6 @@ import os
 from django.core.wsgi import get_wsgi_application
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE",
-                      "fitbit.settings")
+                      "googlefit.settings")
 
 application = get_wsgi_application()
