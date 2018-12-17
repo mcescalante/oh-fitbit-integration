@@ -9,11 +9,13 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.shortcuts import render, redirect
 from django.conf import settings
+from django.urls import reverse
 from datauploader.tasks import fetch_googlefit_data
 from urllib.parse import parse_qs
 from open_humans.models import OpenHumansMember
 from .models import GoogleFitMember
 from .helpers import get_googlefit_file, check_update
+import google_auth_oauthlib.flow
 
 
 # Set up logging.
@@ -65,23 +67,36 @@ def dashboard(request):
     return redirect("/")
 
 
+def authorize_googlefit(request):
+    # Create google oauth flow instance to manage the OAuth 2.0 Authorization Grant Flow steps.
+    flow = google_auth_oauthlib.flow.Flow.from_client_config(
+        settings.GOOGLEFIT_CLIENT_CONFIG, scopes=settings.GOOGLEFIT_SCOPES)
+
+    flow.redirect_uri = request.build_absolute_uri(reverse('complete_googlefit'))
+
+    authorization_url, state = flow.authorization_url(
+        access_type='offline',
+        include_granted_scopes='true')
+    request.session['fitibit_oauth2_state'] = state
+
+    return redirect(authorization_url)
+
 def complete_googlefit(request):
 
-    code = request.GET['code']
+    state = request.session['fitbit_oauth2_state']
+    flow = google_auth_oauthlib.flow.Flow.from_client_config(
+        settings.GOOGLEFIT_CLIENT_CONFIG, scopes=settings.GOOGLEFIT_SCOPES,
+        state=state)
+    flow.redirect_uri = request.build_absolute_uri(reverse('complete_googlefit'))
 
-    # Create Base64 encoded string of clientid:clientsecret for the headers for GoogleFit
-    # https://dev.googlefit.com/build/reference/web-api/oauth2/#access-token-request
-    encode_googlefit_auth = str(settings.GOOGLEFIT_CLIENT_ID) + ":" + str(settings.GOOGLEFIT_CLIENT_SECRET)
-    print(encode_googlefit_auth)
-    b64header = base64.b64encode(encode_googlefit_auth.encode("UTF-8")).decode("UTF-8")
-    # Add the payload of code and grant_type. Construct headers
-    payload = {'code': code, 'grant_type': 'authorization_code'}
-    headers = {'Content-Type': 'application/x-www-form-urlencoded', 'Authorization': 'Basic %s' % (b64header)}
-    # Make request for access token
-    r = requests.post(googlefit_token_url, payload, headers=headers)
-    # print(r.json())
 
-    rjson = r.json()
+    authorization_response = request.path #flask.request.url
+    flow.fetch_token(authorization_response=authorization_response)
+
+    credentials = flow.credentials
+
+    return str(credentials.token) + "\n\n" + str(credentials.refresh_token) + "\n\n" + str(credentials)
+
 
     oh_id = request.user.oh_member.oh_id
     oh_user = OpenHumansMember.objects.get(oh_id=oh_id)
