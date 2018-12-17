@@ -2,11 +2,9 @@ from django.db import models
 from django.conf import settings
 from open_humans.models import OpenHumansMember
 from datetime import timedelta
-import requests
 import arrow
 
 import google.oauth2.credentials
-import google_auth_oauthlib.flow
 
 
 
@@ -56,7 +54,8 @@ class GoogleFitMember(models.Model):
             request = google.auth.transport.requests.Request()
             credentials.refresh(request)
             self.access_token = credentials.token
-            self.refresh_token = credentials.refresh_token
+            if credentials.refresh_token:
+                self.refresh_token = credentials.refresh_token
             self.expiry_date = credentials.expiry
             self.save()
             return True

@@ -7,9 +7,8 @@ from django.contrib.auth import login, logout
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.urls import reverse
-from django.http import JsonResponse
 from datauploader.tasks import fetch_googlefit_data
-from urllib.parse import parse_qs
+from ohapi import api
 from open_humans.models import OpenHumansMember
 from .models import GoogleFitMember
 from .helpers import get_googlefit_file, check_update
@@ -18,7 +17,6 @@ import google_auth_oauthlib.flow
 
 # Set up logging.
 logger = logging.getLogger(__name__)
-
 
 
 def index(request):
@@ -91,12 +89,14 @@ def complete_googlefit(request):
     credentials = flow.credentials
 
     if hasattr(request.user.oh_member, 'googlefit_member'):
-        googlefit_member = request.user.openhumansmember.googlefit_member
+        googlefit_member = request.user.oh_member.googlefit_member
     else:
         googlefit_member = GoogleFitMember()
 
     googlefit_member.access_token = credentials.token
-    googlefit_member.refresh_token = credentials.refresh_token
+    if credentials.refresh_token:
+        # Google returns a null refresh token after the 1st time
+        googlefit_member.refresh_token = credentials.refresh_token
     googlefit_member.expiry_date = credentials.expiry
     googlefit_member.scope = credentials.scopes
     googlefit_member.user_id = request.user.oh_member.oh_id
