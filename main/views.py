@@ -51,7 +51,7 @@ def dashboard(request):
             allow_update = False
             googlefit_member = ''
             download_file = ''
-            auth_url = 'https://www.googlefit.com/oauth2/authorize?response_type=code&client_id='+settings.FITBIT_CLIENT_ID+'&scope=activity%20nutrition%20heartrate%20location%20nutrition%20profile%20settings%20sleep%20social%20weight'
+            auth_url = 'https://www.googlefit.com/oauth2/authorize?response_type=code&client_id='+settings.GOOGLEFIT_CLIENT_ID+'&scope=activity%20nutrition%20heartrate%20location%20nutrition%20profile%20settings%20sleep%20social%20weight'
         
         context = {
             'oh_member': request.user.oh_member,
@@ -71,7 +71,7 @@ def complete_googlefit(request):
 
     # Create Base64 encoded string of clientid:clientsecret for the headers for GoogleFit
     # https://dev.googlefit.com/build/reference/web-api/oauth2/#access-token-request
-    encode_googlefit_auth = str(settings.FITBIT_CLIENT_ID) + ":" + str(settings.FITBIT_CLIENT_SECRET)
+    encode_googlefit_auth = str(settings.GOOGLEFIT_CLIENT_ID) + ":" + str(settings.GOOGLEFIT_CLIENT_SECRET)
     print(encode_googlefit_auth)
     b64header = base64.b64encode(encode_googlefit_auth.encode("UTF-8")).decode("UTF-8")
     # Add the payload of code and grant_type. Construct headers
@@ -177,7 +177,7 @@ def complete(request):
                    'oh_proj_page': settings.OH_ACTIVITY_PAGE}
 
         if not hasattr(oh_member, 'googlefitmember'):
-            auth_url = 'https://www.googlefit.com/oauth2/authorize?response_type=code&client_id='+settings.FITBIT_CLIENT_ID+'&scope=activity%20nutrition%20heartrate%20location%20nutrition%20profile%20settings%20sleep%20social%20weight'
+            auth_url = 'https://www.googlefit.com/oauth2/authorize?response_type=code&client_id='+settings.GOOGLEFIT_CLIENT_ID+'&scope=activity%20nutrition%20heartrate%20location%20nutrition%20profile%20settings%20sleep%20social%20weight'
             context['auth_url'] = auth_url
             return render(request, 'main/googlefit.html',
                         context=context)

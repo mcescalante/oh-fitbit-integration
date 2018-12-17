@@ -52,8 +52,8 @@ OH_DIRECT_UPLOAD_COMPLETE = OH_API_BASE + '/project/files/upload/complete/'
 OH_DELETE_FILES = OH_API_BASE + '/project/files/delete/'
 
 # GoogleFit configuration
-FITBIT_CLIENT_ID=os.getenv('FITBIT_CLIENT_ID')
-FITBIT_CLIENT_SECRET=os.getenv('FITBIT_CLIENT_SECRET')
+GOOGLEFIT_CLIENT_ID=os.getenv('GOOGLEFIT_CLIENT_ID')
+GOOGLEFIT_CLIENT_SECRET=os.getenv('GOOGLEFIT_CLIENT_SECRET')
 
 if REMOTE is True:
     from urllib.parse import urlparse
@@ -78,9 +78,9 @@ except:
     rr = None
 
 if REMOTE is False:
-    FITBIT_CALLBACK_URL = 'http://127.0.0.1:5000/complete/googlefit'
+    GOOGLEFIT_CALLBACK_URL = 'http://127.0.0.1:5000/complete/googlefit'
 else:
-    FITBIT_CALLBACK_URL =\
+    GOOGLEFIT_CALLBACK_URL =\
         'http://oh-googlefit-integration.herokuapp.com/complete/googlefit'
 
 # Application definition
