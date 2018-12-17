@@ -90,15 +90,16 @@ def complete_googlefit(request):
 
     credentials = flow.credentials
 
-    if hasattr(request.user.openhumansmember, 'googlefit_member'):
+    if hasattr(request.user.oh_member, 'googlefit_member'):
         googlefit_member = request.user.openhumansmember.googlefit_member
     else:
         googlefit_member = GoogleFitMember()
 
     googlefit_member.access_token = credentials.token
     googlefit_member.refresh_token = credentials.refresh_token
-    googlefit_member.expiry_date = credentials.token_expiry
-    googlefit_member.scope = credentials.scope
+    googlefit_member.expiry_date = credentials.expiry
+    googlefit_member.scope = credentials.scopes
+    googlefit_member.user_id = request.user.oh_member.oh_id
     googlefit_member.save()
 
     # TODO: Fetch user's data from GoogleFit (update the data if it already exists)
@@ -141,7 +142,7 @@ def update_data(request):
         oh_member = request.user.oh_member
         fetch_googlefit_data.delay(oh_member.googlefit_member.id, oh_member.googlefit_member.access_token)
         googlefit_member = oh_member.googlefit_member
-        googlefit_member.last_submitted = arrow.now().format()
+        #googlefit_member.last_submitted = arrow.now().format()
         googlefit_member.save()
         messages.info(request,
                       ("An update of your GoogleFit data has been started! "

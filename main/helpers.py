@@ -19,6 +19,7 @@ def get_googlefit_file(oh_member):
 
 
 def check_update(googlefit_member):
+    return False
     if googlefit_member.last_submitted < (arrow.now() - timedelta(hours=1)):
         return True
     return False

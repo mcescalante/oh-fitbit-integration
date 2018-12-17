@@ -57,7 +57,7 @@ class GoogleFitMember(models.Model):
             credentials.refresh(request)
             self.access_token = credentials.token
             self.refresh_token = credentials.refresh_token
-            self.expiry_date = credentials.token_expiry
+            self.expiry_date = credentials.expiry
             self.save()
             return True
         return False
