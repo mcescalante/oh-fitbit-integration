@@ -7,7 +7,6 @@ import arrow
 import google.oauth2.credentials
 
 
-
 class GoogleFitMember(models.Model):
     """
     Store OAuth2 data for a GoogleFit Member.
@@ -16,9 +15,8 @@ class GoogleFitMember(models.Model):
     user = models.OneToOneField(OpenHumansMember, related_name="googlefit_member", on_delete=models.CASCADE)
     access_token = models.CharField(max_length=512)
     refresh_token = models.CharField(max_length=512)
-    expiry_date = models.DateTimeField(max_length=512)
+    expiry_date = models.DateTimeField()
     scope = models.CharField(max_length=512)
-    #token_type = models.CharField(max_length=512)
     #last_updated = models.DateTimeField(
     #                        default=(arrow.now() - timedelta(days=7)).format())
     #last_submitted = models.DateTimeField(
