@@ -36,17 +36,17 @@
         If you want access to minute or second level data, you will need Intraday access. If you don't need this granular of access, you can use regular access.</li> -->
 
       </ol>
-      {% if client_id %}
+      {% if oh_auth_url %}
       <a
         class="btn btn-primary btn-lg"
-        href="https://www.openhumans.org/direct-sharing/projects/oauth2/authorize/?client_id={{ client_id }}&response_type=code"
+        href="{{ oh_auth_url }}"
         {% else %}
         class="btn btn-default disabled"
         {% endif %}
         >
         Start with Open Humans authorization
       </a>
-      {% if not client_id %}
+      {% if not oh_auth_url %}
       <p class="text-muted"><i>
         This button is disabled because client_id hasn't been configured.
       </i></p>

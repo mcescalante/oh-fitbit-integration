@@ -41,6 +41,7 @@ if OPENHUMANS_APP_BASE_URL[-1] == "/":
     OPENHUMANS_APP_BASE_URL = OPENHUMANS_APP_BASE_URL[:-1]
 
 # Open Humans configuration
+OPENHUMANS_LOGIN_REDIRECT_URL='/'
 OPENHUMANS_CLIENT_ID = os.getenv('OPENHUMANS_CLIENT_ID')
 OPENHUMANS_CLIENT_SECRET = os.getenv('OPENHUMANS_CLIENT_SECRET')
 OH_ACTIVITY_PAGE = os.getenv('OH_ACTIVITY_PAGE')
@@ -106,10 +107,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'raven.contrib.django.raven_compat',
-
-    'datauploader.apps.DatauploaderConfig',
-    'open_humans.apps.OpenHumansConfig',
-    'main.apps.MainConfig',
+    'openhumans',
+    'datauploader',
+    'main',
 ]
 
 MIDDLEWARE = [

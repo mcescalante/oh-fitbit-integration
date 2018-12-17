@@ -13,7 +13,7 @@ import json
 import arrow
 from celery import shared_task
 from django.conf import settings
-from open_humans.models import OpenHumansMember
+from openhumans.models import OpenHumansMember
 from datetime import datetime
 from googlefit.settings import rr
 from main.models import GoogleFitMember
@@ -70,7 +70,7 @@ def get_existing_googlefit(oh_access_token, googlefit_urls):
     return googlefit_data
 
 
-def replace_googlefit(oh_member, googlefit_data):
+def replace_googlefit(openhumansmember, googlefit_data):
     print("replace function started")
     # delete old file and upload new to open humans
     tmp_directory = tempfile.mkdtemp()
@@ -81,9 +81,9 @@ def replace_googlefit(oh_member, googlefit_data):
         'updated_at': str(datetime.utcnow()),
         }
     out_file = os.path.join(tmp_directory, 'googlefit-data.json')
-    logger.debug('deleted old file for {}'.format(oh_member.oh_id))
-    deleter = api.delete_file(oh_member.access_token,
-                    oh_member.oh_id,
+    logger.debug('deleted old file for {}'.format(openhumansmember.oh_id))
+    deleter = api.delete_file(openhumansmember.access_token,
+                    openhumansmember.oh_id,
                     file_basename="googlefit-data.json")
     print("delete response")
     print(deleter)
@@ -97,8 +97,8 @@ def replace_googlefit(oh_member, googlefit_data):
         json_file.flush()
     print("attempting add response")
     addr = api.upload_aws(out_file, metadata,
-                   oh_member.access_token,
-                   project_member_id=oh_member.oh_id)
+                   openhumansmember.access_token,
+                   project_member_id=openhumansmember.oh_id)
     print("add response")
     print(addr)
-    logger.debug('uploaded new file for {}'.format(oh_member.oh_id))
+    logger.debug('uploaded new file for {}'.format(openhumansmember.oh_id))

@@ -23,13 +23,13 @@ class Command(BaseCommand):
                 googlefit_refresh_token = line[2]
                 if len(OpenHumansMember.objects.filter(
                             oh_id=oh_id)) == 1:
-                    oh_member = OpenHumansMember.objects.get(oh_id=oh_id)
-                    if hasattr(oh_member, 'googlefit_member'):
-                        googlefit_member = oh_member.googlefit_member
+                    openhumansmember = OpenHumansMember.objects.get(oh_id=oh_id)
+                    if hasattr(openhumansmember, 'googlefit_member'):
+                        googlefit_member = openhumansmember.googlefit_member
                         print(googlefit_member)
                         successful_refresh = googlefit_member._refresh_tokens()
                         if not successful_refresh:
                             googlefit_member.refresh_token = googlefit_refresh_token
                             googlefit_member.save()
                             googlefit_member._refresh_tokens()
-                    # fetch_googlefit_data.delay(oh_member.oh_id, oh_member.googlefit_member.access_token)
+                    # fetch_googlefit_data.delay(openhumansmember.oh_id, openhumansmember.googlefit_member.access_token)

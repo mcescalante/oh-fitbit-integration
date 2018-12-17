@@ -1,6 +1,6 @@
 from django.db import models
 from django.conf import settings
-from open_humans.models import OpenHumansMember
+from openhumans.models import OpenHumansMember
 from datetime import timedelta
 import arrow
 
@@ -16,7 +16,7 @@ class GoogleFitMember(models.Model):
     user = models.OneToOneField(OpenHumansMember, related_name="googlefit_member", on_delete=models.CASCADE)
     access_token = models.CharField(max_length=512)
     refresh_token = models.CharField(max_length=512)
-    expiry_date = models.DateTimeField(max_length=512, default=(arrow.now() + timedelta(hours=1)).format())
+    expiry_date = models.DateTimeField(max_length=512)
     scope = models.CharField(max_length=512)
     #token_type = models.CharField(max_length=512)
     #last_updated = models.DateTimeField(
