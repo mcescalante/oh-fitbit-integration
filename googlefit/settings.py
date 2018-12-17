@@ -70,9 +70,12 @@ if REMOTE is True:
         },
         safety_threshold=5)
 
-# Requests Respectful (rate limiting, waiting)
-rr = RespectfulRequester()
-rr.register_realm("GoogleFit", max_requests=3600, timespan=3600)
+
+try:
+    rr = RespectfulRequester()
+    rr.register_realm("GoogleFit", max_requests=3600, timespan=3600)
+except:
+    rr = None
 
 if REMOTE is False:
     FITBIT_CALLBACK_URL = 'http://127.0.0.1:5000/complete/googlefit'

@@ -15,7 +15,7 @@ class GoogleFitMember(models.Model):
     userid = models.CharField(max_length=255, unique=True, null=True)
     access_token = models.CharField(max_length=512)
     refresh_token = models.CharField(max_length=512)
-    expires_in = models.CharField(max_length=512)
+    expires_in = models.CharField(max_length=512, default=3600)
     scope = models.CharField(max_length=512)
     token_type = models.CharField(max_length=512)
     last_updated = models.DateTimeField(
@@ -27,9 +27,7 @@ class GoogleFitMember(models.Model):
     def get_expiration(expires_in):
         return (arrow.now() + timedelta(seconds=expires_in)).format()
 
-    def get_access_token(self,
-                         client_id=settings.FITBIT_CLIENT_ID,
-                         client_secret=settings.FITBIT_CLIENT_SECRET):
+    def get_access_token(self):
         """
         Return access token. Refresh first if necessary.
         """
@@ -44,13 +42,8 @@ class GoogleFitMember(models.Model):
         Refresh access token.
         """
         print("calling refresh token method in class")
-        response = requests.post(
-            'https://api.googlefit.com/oauth2/token',
-            data={
-                'grant_type': 'refresh_token',
-                'refresh_token': self.refresh_token},
-            auth=requests.auth.HTTPBasicAuth(
-                settings.FITBIT_CLIENT_ID, settings.FITBIT_CLIENT_SECRET))
+        #TODO: call google oauth2
+        response = None
         print(response.text)
         if response.status_code == 200:
             data = response.json()
