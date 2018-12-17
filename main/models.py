@@ -5,6 +5,10 @@ from datetime import timedelta
 import requests
 import arrow
 
+import google.oauth2.credentials
+import google_auth_oauthlib.flow
+
+
 
 class GoogleFitMember(models.Model):
     """
@@ -41,17 +45,19 @@ class GoogleFitMember(models.Model):
         """
         Refresh access token.
         """
-        print("calling refresh token method in class")
-        #TODO: call google oauth2
-        response = None
-        print(response.text)
-        if response.status_code == 200:
-            data = response.json()
-            self.access_token = data['access_token']
-            self.refresh_token = data['refresh_token']
-            self.token_expires = self.get_expiration(data['expires_in'])
-            self.scope = data['scope']
-            self.userid = data['user_id']
+        credentials = google.oauth2.credentials.Credentials(
+            token=self.access_token,
+            refresh_token=self.refresh_token,
+            token_uri=settings.GOOGLEFIT_TOKEN_URI,
+            client_id=settings.GOOGLEFIT_CLIENT_ID,
+            client_secret=settings.GOOGLEFIT_CLIENT_SECRET,
+            scopes=settings.GOOGLEFIT_SCOPES,
+        )
+        if credentials.valid:
+            request = google.auth.transport.requests.Request()
+            credentials.refresh(request)
+            self.access_token = credentials.token
+            self.refresh_token = credentials.refresh_token
             self.save()
             return True
         return False

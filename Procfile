@@ -1,3 +1,3 @@
 release: python manage.py migrate
-web: gunicorn fitbit.wsgi --log-file=-
+web: gunicorn googlefit.wsgi --log-file=-
 worker: celery worker -A datauploader --concurrency 1

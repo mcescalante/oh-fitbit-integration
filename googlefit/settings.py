@@ -41,8 +41,8 @@ if OPENHUMANS_APP_BASE_URL[-1] == "/":
     OPENHUMANS_APP_BASE_URL = OPENHUMANS_APP_BASE_URL[:-1]
 
 # Open Humans configuration
-OPENHUMANS_CLIENT_ID = os.getenv('OH_CLIENT_ID')
-OPENHUMANS_CLIENT_SECRET = os.getenv('OH_CLIENT_SECRET')
+OPENHUMANS_CLIENT_ID = os.getenv('OPENHUMANS_CLIENT_ID')
+OPENHUMANS_CLIENT_SECRET = os.getenv('OPENHUMANS_CLIENT_SECRET')
 OH_ACTIVITY_PAGE = os.getenv('OH_ACTIVITY_PAGE')
 OPENHUMANS_OH_BASE_URL = 'https://www.openhumans.org'
 
@@ -54,6 +54,10 @@ OH_DELETE_FILES = OH_API_BASE + '/project/files/delete/'
 # GoogleFit configuration
 GOOGLEFIT_CLIENT_ID=os.getenv('GOOGLEFIT_CLIENT_ID')
 GOOGLEFIT_CLIENT_SECRET=os.getenv('GOOGLEFIT_CLIENT_SECRET')
+GOOGLEFIT_SCOPES = ['https://www.googleapis.com/auth/fitness.activity.read',
+          'https://www.googleapis.com/auth/fitness.location.read']
+
+GOOGLEFIT_TOKEN_URI = "https://www.googleapis.com/oauth2/v3/token"
 
 if REMOTE is True:
     from urllib.parse import urlparse

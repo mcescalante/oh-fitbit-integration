@@ -41,6 +41,7 @@ def fetch_googlefit_data(googlefit_member_id, access_token):
     '''
     Fetches all of the googlefit data for a given user
     '''
+    return True
     googlefit_urls = [
         # Requires the 'settings' scope, which we haven't asked for
         # {'name': 'devices', 'url': '/-/devices.json', 'period': None},

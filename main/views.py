@@ -109,8 +109,6 @@ def complete_googlefit(request):
     # print(googlefit_member)
     alldata = fetch_googlefit_data.delay(googlefit_member.id, rjson['access_token'])
 
-    context = {'oh_proj_page': settings.OH_ACTIVITY_PAGE}
-
     if googlefit_member:
         messages.info(request, "Your GoogleFit account has been connected, and your data has been queued to be fetched from GoogleFit")
         return redirect('/dashboard')
@@ -157,7 +155,7 @@ def update_data(request):
         return redirect('/dashboard')
 
 
-def complete(request):
+def complete_oh(request):
     """
     Receive user from Open Humans. Store data, start upload.
     """
@@ -195,11 +193,11 @@ def oh_code_to_member(code):
     """
     if settings.OPENHUMANS_CLIENT_SECRET and \
        settings.OPENHUMANS_CLIENT_ID and code:
-        print('{}/complete/oh'.format(settings.OPENHUMANS_APP_BASE_URL))
+        print('{}/openhumans/complete'.format(settings.OPENHUMANS_APP_BASE_URL))
         data = {
             'grant_type': 'authorization_code',
             'redirect_uri':
-            '{}/complete/oh'.format(settings.OPENHUMANS_APP_BASE_URL),
+            '{}/openhumans/complete'.format(settings.OPENHUMANS_APP_BASE_URL),
             'code': code,
         }
         req = requests.post(
