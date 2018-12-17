@@ -1,8 +1,5 @@
 import logging
 import requests
-import os
-import base64
-import json
 import arrow
 
 from django.contrib import messages
@@ -10,6 +7,7 @@ from django.contrib.auth import login, logout
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.urls import reverse
+from django.http import JsonResponse
 from datauploader.tasks import fetch_googlefit_data
 from urllib.parse import parse_qs
 from open_humans.models import OpenHumansMember
@@ -21,9 +19,6 @@ import google_auth_oauthlib.flow
 # Set up logging.
 logger = logging.getLogger(__name__)
 
-# GoogleFit settings
-googlefit_authorize_url = 'https://www.googlefit.com/oauth2/authorize'
-googlefit_token_url = 'https://api.googlefit.com/oauth2/token'
 
 
 def index(request):
@@ -53,7 +48,7 @@ def dashboard(request):
             allow_update = False
             googlefit_member = ''
             download_file = ''
-            auth_url = 'https://www.googlefit.com/oauth2/authorize?response_type=code&client_id='+settings.GOOGLEFIT_CLIENT_ID+'&scope=activity%20nutrition%20heartrate%20location%20nutrition%20profile%20settings%20sleep%20social%20weight'
+            auth_url = reverse('authorize_googlefit')
         
         context = {
             'oh_member': request.user.oh_member,
@@ -77,25 +72,25 @@ def authorize_googlefit(request):
     authorization_url, state = flow.authorization_url(
         access_type='offline',
         include_granted_scopes='true')
-    request.session['fitibit_oauth2_state'] = state
+    request.session['googlefit_oauth2_state'] = state
 
     return redirect(authorization_url)
 
 def complete_googlefit(request):
 
-    state = request.session['fitbit_oauth2_state']
+    state = request.session['googlefit_oauth2_state']
     flow = google_auth_oauthlib.flow.Flow.from_client_config(
         settings.GOOGLEFIT_CLIENT_CONFIG, scopes=settings.GOOGLEFIT_SCOPES,
         state=state)
     flow.redirect_uri = request.build_absolute_uri(reverse('complete_googlefit'))
 
 
-    authorization_response = request.path #flask.request.url
+    authorization_response = request.get_full_path()
     flow.fetch_token(authorization_response=authorization_response)
 
     credentials = flow.credentials
 
-    return str(credentials.token) + "\n\n" + str(credentials.refresh_token) + "\n\n" + str(credentials)
+    return JsonResponse({'token': credentials.token})
 
 
     oh_id = request.user.oh_member.oh_id
@@ -190,8 +185,7 @@ def complete_oh(request):
                    'oh_proj_page': settings.OH_ACTIVITY_PAGE}
 
         if not hasattr(oh_member, 'googlefitmember'):
-            auth_url = 'https://www.googlefit.com/oauth2/authorize?response_type=code&client_id='+settings.GOOGLEFIT_CLIENT_ID+'&scope=activity%20nutrition%20heartrate%20location%20nutrition%20profile%20settings%20sleep%20social%20weight'
-            context['auth_url'] = auth_url
+            context['auth_url'] = reverse('authorize_googlefit')
             return render(request, 'main/googlefit.html',
                         context=context)
         
