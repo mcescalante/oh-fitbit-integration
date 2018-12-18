@@ -140,7 +140,7 @@ def update_data(request):
         openhumansmember = request.user.openhumansmember
         googlefit_member = openhumansmember.googlefit_member
         fetch_googlefit_data.delay(openhumansmember.access_token, openhumansmember.oh_id, googlefit_member.access_token)
-        googlefit_member.last_submitted = arrow.now().format()
+        googlefit_member.last_submitted_for_update = arrow.now().format()
         googlefit_member.save()
         messages.info(request,
                       ("An update of your GoogleFit data has been started! "
