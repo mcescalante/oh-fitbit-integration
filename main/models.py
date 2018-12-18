@@ -7,6 +7,10 @@ import arrow
 import google.oauth2.credentials
 
 
+def now():
+    return arrow.now()
+
+
 class GoogleFitMember(models.Model):
     """
     Store OAuth2 data for a GoogleFit Member.
@@ -17,10 +21,8 @@ class GoogleFitMember(models.Model):
     refresh_token = models.CharField(max_length=512)
     expiry_date = models.DateTimeField()
     scope = models.CharField(max_length=512)
-    #last_updated = models.DateTimeField(
-    #                        default=(arrow.now() - timedelta(days=7)).format())
-    #last_submitted = models.DateTimeField(
-    #                        default=(arrow.now() - timedelta(days=7)).format())
+    last_updated = models.DateTimeField(null=True)
+    last_submitted_for_update = models.DateTimeField(null=True)
 
     @staticmethod
     def get_expiration(expires_in):

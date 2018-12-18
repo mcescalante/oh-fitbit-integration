@@ -37,14 +37,34 @@ class RateLimitException(Exception):
 
     pass
 
+def create_metadata():
+    return {
+        'description':
+            'Google Fit data.',
+        'tags': ['Google Fit', 'GoogleFit', 'activity', 'steps', 'calories', 'distance'],
+        'updated_at': str(datetime.utcnow()),
+    }
+
 
 @shared_task
-def fetch_googlefit_data(oh_access_token, gf_access_token):
+def fetch_googlefit_data(oh_member, gf_member):
     '''
     Fetches all of the googlefit data for a given user
     '''
-    data_types_for_user = query_data_sources(gf_access_token)
+
+    data_types_for_user = query_data_sources(gf_member.access_token)
     data_types_json = json.dumps({"data_types": data_types_for_user})
+    out_file = '/tmp/foo.json'
+
+    with open(out_file, 'w') as json_file:
+        json_file.write(json.dumps(data_types_json))
+        json_file.flush()
+
+    # metadators somehow??
+
+    addr = api.upload_aws(out_file, create_metadata(),
+                          oh_member.access_token,
+                          project_member_id=oh_member.oh_id)
 
     # upload to aws somehow?
 
