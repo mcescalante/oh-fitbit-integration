@@ -11,7 +11,7 @@ from datauploader.tasks import fetch_googlefit_data
 from ohapi import api
 from openhumans.models import OpenHumansMember
 from .models import GoogleFitMember
-from .helpers import get_googlefit_file, check_update
+from .helpers import get_googlefit_file, can_update_data
 import google_auth_oauthlib.flow
 
 
@@ -41,7 +41,7 @@ def dashboard(request):
                 logout(request)
                 return redirect("/")
             auth_url = ''
-            allow_update = check_update(googlefit_member)
+            allow_update = can_update_data(googlefit_member)
         else:
             allow_update = False
             googlefit_member = ''
@@ -103,7 +103,7 @@ def complete_googlefit(request):
     googlefit_member.save()
 
     # TODO: Fetch user's data from GoogleFit (update the data if it already exists)
-    alldata = fetch_googlefit_data.delay(request.user.openhumansmember, googlefit_member)
+    alldata = fetch_googlefit_data.delay(request.user.openhumansmember.access_token, request.user.openhumansmember.oh_id, googlefit_member.get_access_token())
 
     if googlefit_member:
         messages.info(request, "Your GoogleFit account has been connected, and your data has been queued to be fetched from GoogleFit")
@@ -139,7 +139,7 @@ def update_data(request):
     if request.method == "POST" and request.user.is_authenticated:
         openhumansmember = request.user.openhumansmember
         googlefit_member = openhumansmember.googlefit_member
-        fetch_googlefit_data.delay(openhumansmember, googlefit_member)
+        fetch_googlefit_data.delay(openhumansmember.access_token, openhumansmember.oh_id, googlefit_member.access_token)
         googlefit_member.last_submitted = arrow.now().format()
         googlefit_member.save()
         messages.info(request,

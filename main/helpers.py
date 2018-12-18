@@ -18,7 +18,7 @@ def get_googlefit_file(openhumansmember):
         return 'error'
 
 
-def check_update(googlefit_member):
-    if googlefit_member.last_submitted_for_update < (arrow.now() - timedelta(hours=1)):
+def can_update_data(googlefit_member):
+    if not googlefit_member.last_submitted_for_update or googlefit_member.last_submitted_for_update < (arrow.now() - timedelta(hours=1)):
         return True
     return False
