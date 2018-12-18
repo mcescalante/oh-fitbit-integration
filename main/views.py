@@ -103,7 +103,7 @@ def complete_googlefit(request):
     googlefit_member.save()
 
     # TODO: Fetch user's data from GoogleFit (update the data if it already exists)
-    alldata = fetch_googlefit_data.delay(request.user.openhumansmember.access_token, request.user.openhumansmember.oh_id, googlefit_member.get_access_token())
+    alldata = fetch_googlefit_data.delay(request.user.openhumansmember.oh_id)
 
     if googlefit_member:
         messages.info(request, "Your GoogleFit account has been connected, and your data has been queued to be fetched from GoogleFit")
@@ -139,7 +139,7 @@ def update_data(request):
     if request.method == "POST" and request.user.is_authenticated:
         openhumansmember = request.user.openhumansmember
         googlefit_member = openhumansmember.googlefit_member
-        fetch_googlefit_data.delay(openhumansmember.access_token, openhumansmember.oh_id, googlefit_member.access_token)
+        fetch_googlefit_data.delay(openhumansmember.oh_id)
         googlefit_member.last_submitted_for_update = arrow.now().format()
         googlefit_member.save()
         messages.info(request,

@@ -21,6 +21,7 @@ from ohapi import api
 from requests_respectful import (RespectfulRequester,
                                  RequestsRespectfulRateLimitedError)
 from .googlefit_api import query_data_sources
+from .helpers import write_jsonfile_to_tmp_dir
 
 # Set up logging.
 logger = logging.getLogger(__name__)
@@ -47,27 +48,23 @@ def create_metadata():
 
 
 @shared_task
-def fetch_googlefit_data(oh_access_token, oh_id, gf_access_token):
+def fetch_googlefit_data(oh_id):
     '''
     Fetches all of the googlefit data for a given user
     '''
+    oh_member = OpenHumansMember.objects.get(oh_id=oh_id)
+    gf_member = oh_member.googlefit_member
+    oh_access_token = oh_member.get_access_token()
+    gf_access_token = gf_member.get_access_token()
 
     data_types_for_user = query_data_sources(gf_access_token)
-    data_types_json = json.dumps({"data_types": data_types_for_user})
-    out_file = '/tmp/foo.json'
-
-    with open(out_file, 'w') as json_file:
-        json_file.write(json.dumps(data_types_json))
-        json_file.flush()
-
-    # metadators somehow??
-
-    addr = api.upload_aws(out_file, create_metadata(),
+    out_file = write_jsonfile_to_tmp_dir('foo2.json', {'data_types': data_types_for_user})
+    api.upload_aws(out_file, create_metadata(),
                           oh_access_token,
                           project_member_id=oh_id)
 
-    # upload to aws somehow?
-
+    gf_member.last_updated = arrow.now().format()
+    gf_member.save()
 
 
 def get_existing_googlefit(oh_access_token, googlefit_urls):
