@@ -37,6 +37,16 @@ def index(request):
     return render(request, 'main/index.html', context=context)
 
 
+def about(request):
+    """
+    Share further details about the project.
+    """
+    context = {'client_id': settings.OPENHUMANS_CLIENT_ID,
+            #    'redirect_uri': '{}/complete'.format(settings.OPENHUMANS_APP_BASE_URL),
+               'oh_proj_page': settings.OH_ACTIVITY_PAGE}
+    return render(request, 'main/about.html', context=context)
+
+
 def dashboard(request):
     if request.user.is_authenticated:
         if hasattr(request.user.oh_member, 'fitbit_member'):
