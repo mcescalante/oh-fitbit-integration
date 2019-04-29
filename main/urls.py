@@ -8,5 +8,6 @@ urlpatterns = [
     path('complete/fitbit', views.complete_fitbit, name='complete_fitbit'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('update_data/', views.update_data, name='update_data'),
-    path('remove_fitbit/', views.remove_fitbit, name='remove_fitbit')
+    path('remove_fitbit/', views.remove_fitbit, name='remove_fitbit'),
+    path('about/', views.about, name='about'),
 ]
