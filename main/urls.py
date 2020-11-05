@@ -10,4 +10,5 @@ urlpatterns = [
     path('update_data/', views.update_data, name='update_data'),
     path('remove_fitbit/', views.remove_fitbit, name='remove_fitbit'),
     path('about/', views.about, name='about'),
+    path('logout/', views.user_logout, name='logout'),
 ]

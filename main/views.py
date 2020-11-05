@@ -24,6 +24,15 @@ fitbit_authorize_url = 'https://www.fitbit.com/oauth2/authorize'
 fitbit_token_url = 'https://api.fitbit.com/oauth2/token'
 
 
+def user_logout(request):
+    """
+    logout the user
+    """
+    if request.method == "POST" and request.user.is_authenticated:
+        logout(request)
+        return redirect("/")
+
+
 def index(request):
     """
     Starting page for app.
@@ -62,7 +71,7 @@ def dashboard(request):
             fitbit_member = ''
             download_file = ''
             auth_url = 'https://www.fitbit.com/oauth2/authorize?response_type=code&client_id='+settings.FITBIT_CLIENT_ID+'&scope=activity%20nutrition%20heartrate%20location%20nutrition%20profile%20settings%20sleep%20social%20weight'
-        
+
         context = {
             'oh_member': request.user.oh_member,
             'fitbit_member': fitbit_member,
@@ -191,7 +200,7 @@ def complete(request):
             context['auth_url'] = auth_url
             return render(request, 'main/fitbit.html',
                         context=context)
-        
+
         return redirect("/dashboard")
 
     logger.debug('Invalid code exchange. User returned to starting page.')
