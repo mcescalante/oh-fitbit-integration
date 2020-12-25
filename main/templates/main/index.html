@@ -25,10 +25,12 @@
   </div>
 </div>
 
+<div>
 <p>
   <a href="https://www.fitbit.com">Fitbit</a> is a family of fitness products that help you stay motivated and improve your health by tracking your activity, exercise, food, weight and sleep.
   This website can be used to retrieve and store your account data from Fitbit in your Open Humans account.
 </p>
+
 
 <p>
   Check out <a href="{{ oh_proj_page }}">this project's activity page</a>
@@ -44,4 +46,22 @@
   and always available to you, and you choose when to share with others.
 </p>
 
-{% endblock main %}
+  </ol>
+  {% if client_id %}
+  <a
+    class="btn btn-primary btn-lg"
+    href="https://www.openhumans.org/direct-sharing/projects/oauth2/authorize/?client_id={{ client_id }}&response_type=code&redirect_uri={{app_base}}/complete/oh"
+    {% else %}
+    class="btn btn-default disabled"
+    {% endif %}
+    >
+    Start with Open Humans authorization
+  </a>
+  {% if not client_id %}
+  <p class="text-muted"><i>
+    This button is disabled because client_id hasn't been configured.
+  </i></p>
+  {% endif %}
+</div>
+
+{% endblock %}

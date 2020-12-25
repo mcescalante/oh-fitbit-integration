@@ -308,7 +308,8 @@ def fetch_fitbit_data(fitbit_member_id, access_token):
 
 def get_existing_fitbit(oh_access_token, fitbit_urls):
     print("entered get_existing_fitbit")
-    member = api.exchange_oauth2_member(oh_access_token)
+    member = api.exchange_oauth2_member(
+        oh_access_token, all_files=True)
     for dfile in member['data']:
         if 'Fitbit' in dfile['metadata']['tags']:
             print("got inside fitbit if")

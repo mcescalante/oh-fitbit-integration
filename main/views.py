@@ -1,8 +1,6 @@
 import logging
 import requests
-import os
 import base64
-import json
 import arrow
 
 from django.contrib import messages
@@ -10,11 +8,10 @@ from django.contrib.auth import login, logout
 from django.shortcuts import render, redirect
 from django.conf import settings
 from datauploader.tasks import fetch_fitbit_data
-from urllib.parse import parse_qs
 from open_humans.models import OpenHumansMember
 from .models import FitbitMember
 from .helpers import get_fitbit_file, check_update
-
+from ohapi import api
 
 # Set up logging.
 logger = logging.getLogger(__name__)
@@ -41,6 +38,7 @@ def index(request):
         return redirect('/dashboard')
 
     context = {'client_id': settings.OPENHUMANS_CLIENT_ID,
+               'app_base': settings.OPENHUMANS_APP_BASE_URL,
                'oh_proj_page': settings.OH_ACTIVITY_PAGE}
 
     return render(request, 'main/index.html', context=context)
